@@ -11,7 +11,7 @@ public class ItemDto extends Model {
     private String description;
     private Boolean available;
 
-    public ItemDto (String name, String description, Boolean available) {
+    public ItemDto(String name, String description, Boolean available) {
         this.setName(name);
         this.setDescription(description);
         this.setAvailable(available);

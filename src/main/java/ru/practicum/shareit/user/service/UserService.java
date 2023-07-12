@@ -34,7 +34,7 @@ public class UserService {
     }
 
     public void validate(User object) {
-        var userWithSameEmail = repository.getAll().stream().filter(x->x.getEmail().equals(object.getEmail())).findFirst();
+        var userWithSameEmail = repository.getAll().stream().filter(x -> x.getEmail().equals(object.getEmail())).findFirst();
         if (object.getEmail() == null) {
             throw new ValidationException("Email не задан", object);
         } else if (object.getEmail().isBlank()) {

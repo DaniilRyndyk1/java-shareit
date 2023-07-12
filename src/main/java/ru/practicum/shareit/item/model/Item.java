@@ -8,12 +8,12 @@ import ru.practicum.shareit.user.model.User;
 
 @Data
 public class Item extends Model {
-    public String Description;
-    public Boolean Available;
-    public User Owner;
-    public ItemRequest Request;
+    private String description;
+    private Boolean available;
+    private User owner;
+    private ItemRequest request;
 
-   public Item (String name, String description, Boolean available, User owner, ItemRequest request) {
+   public Item(String name, String description, Boolean available, User owner, ItemRequest request) {
        this.setName(name);
        this.setDescription(description);
        this.setAvailable(available);

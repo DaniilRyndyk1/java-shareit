@@ -16,7 +16,7 @@ public class Booking extends Model {
     private String review;
     private BookingStatus status;
 
-    public Booking (LocalDate start, LocalDate end, Item bookedItem, User booker, String review, BookingStatus status) {
+    public Booking(LocalDate start, LocalDate end, Item bookedItem, User booker, String review, BookingStatus status) {
         this.setStart(start);
         this.setEnd(end);
         this.setBookedItem(bookedItem);
