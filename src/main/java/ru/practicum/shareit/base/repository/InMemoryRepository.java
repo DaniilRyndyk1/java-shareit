@@ -1,7 +1,6 @@
 package ru.practicum.shareit.base.repository;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.base.Model;
 
@@ -21,7 +20,7 @@ public class InMemoryRepository<T extends Model> implements Repository<T> {
     public T add(T object) {
         object.setId(id);
         objects.put(id, object);
-        log.info("Успешно был добавлен объект типа {} с id = {}", object.getClass().getSimpleName(), id);
+        log.info("Успешно был добавлен {} с id = {}", object.getClass().getSimpleName(), id);
         id++;
         return object;
     }
@@ -41,11 +40,6 @@ public class InMemoryRepository<T extends Model> implements Repository<T> {
     }
 
     @Override
-    public void clear() {
-        objects.clear();
-    }
-
-    @Override
     public List<T> getAll() {
         return new ArrayList<>(objects.values());
     }
@@ -55,22 +49,7 @@ public class InMemoryRepository<T extends Model> implements Repository<T> {
         long id = model.getId();
         remove(id);
         objects.put(id, model);
-        log.info("Успешно был обновлен объект типа {} с id = {}", model.getClass().getSimpleName(), id);
+        log.info("Успешно был обновлен {} с id = {}", model.getClass().getSimpleName(), id);
         return model;
-    }
-
-    @Override
-    public String getUpdateData(T object) {
-        return null;
-    }
-
-    @Override
-    public String getInsertData(T object) {
-        return null;
-    }
-
-    @Override
-    public T getObject(SqlRowSet set) {
-        return null;
     }
 }

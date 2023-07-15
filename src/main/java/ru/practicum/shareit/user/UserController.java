@@ -1,6 +1,6 @@
 package ru.practicum.shareit.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.base.exception.ValidationException;
@@ -11,15 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping(path = "/users")
 public class UserController {
 
     private final UserService service;
-
-    @Autowired
-    public UserController(UserService service) {
-        this.service = service;
-    }
 
     @GetMapping("{id}")
     public User get(@PathVariable long id) {
@@ -54,9 +50,5 @@ public class UserController {
     )
     public Map<String, String> handleWrongData(final ValidationException e) {
         return Map.of("error", e.getMessage());
-    }
-
-    public void validate(User object) {
-        service.validate(object);
     }
 }

@@ -5,7 +5,6 @@ import ru.practicum.shareit.base.Model;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
-
 @Data
 public class ItemDto extends Model {
     private String description;

@@ -1,12 +1,11 @@
 package ru.practicum.shareit.user.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.practicum.shareit.base.exception.EmailConflictException;
 import ru.practicum.shareit.base.exception.NotFoundException;
 import ru.practicum.shareit.base.exception.ValidationException;
-import ru.practicum.shareit.base.repository.Repository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.InMemoryUserRepository;
 
@@ -14,14 +13,10 @@ import java.util.List;
 import java.util.Objects;
 
 @org.springframework.stereotype.Service
+@RequiredArgsConstructor
 public class UserService {
 
-    private final Repository<User> repository;
-
-    @Autowired
-    public UserService(InMemoryUserRepository repository) {
-        this.repository = repository;
-    }
+    private final InMemoryUserRepository repository;
 
     public User change(User original, User object) {
         if (object.getName() == null) {
@@ -33,16 +28,17 @@ public class UserService {
         return object;
     }
 
-    public void validate(User object) {
-        var userWithSameEmail = repository.getAll().stream().filter(x -> x.getEmail().equals(object.getEmail())).findFirst();
-        if (object.getEmail() == null) {
-            throw new ValidationException("Email не задан", object);
-        } else if (object.getEmail().isBlank()) {
-            throw new ValidationException("Электронная почта не может быть пустой", object);
-        }  else if (!object.getEmail().contains("@")) {
-            throw new ValidationException("Электронная почта должна содержать символ @", object);
+    private void validateUser(User user) {
+        String email = user.getEmail();
+        var userWithSameEmail = repository.getAll().stream().filter(x -> x.getEmail().equals(email)).findFirst();
+        if (user.getEmail() == null) {
+            throw new ValidationException("Email не задан");
+        } else if (user.getEmail().isBlank()) {
+            throw new ValidationException("Электронная почта не может быть пустой");
+        }  else if (!user.getEmail().contains("@")) {
+            throw new ValidationException("Электронная почта должна содержать символ @");
         }  else if (userWithSameEmail.isPresent()) {
-            if (!Objects.equals(userWithSameEmail.get().getId(), object.getId())) {
+            if (!Objects.equals(userWithSameEmail.get().getId(), user.getId())) {
                 throw new EmailConflictException();
             }
         }
@@ -65,14 +61,14 @@ public class UserService {
     }
 
     public User create(@RequestBody User object) {
-        validate(object);
+        validateUser(object);
         return repository.add(object);
     }
 
     public User patch(@RequestBody User object) {
         var original = get(object.getId());
         object = change(original, object);
-        validate(object);
+        validateUser(object);
         return repository.change(object);
     }
 }

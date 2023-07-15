@@ -9,6 +9,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class EmailConflictException extends RuntimeException {
 
     public EmailConflictException() {
-        super(String.format("Email уже существует"));
+        super("Email уже существует");
     }
 }

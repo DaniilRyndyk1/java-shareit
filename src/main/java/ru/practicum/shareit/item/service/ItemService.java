@@ -1,14 +1,13 @@
 package ru.practicum.shareit.item.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import ru.practicum.shareit.base.exception.NotFoundException;
 import ru.practicum.shareit.base.exception.ValidationException;
-import ru.practicum.shareit.base.repository.Repository;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.InMemoryItemRepository;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +15,11 @@ import java.util.regex.Pattern;
 
 
 @org.springframework.stereotype.Service
+@RequiredArgsConstructor
 public class ItemService {
 
-    private final Repository<Item> repository;
-
-    @Autowired
-    public ItemService(InMemoryItemRepository repository) {
-        this.repository = repository;
-    }
+    private final InMemoryItemRepository repository;
+    private final UserService userService;
 
     public Item change(Item original, Item object) {
         if (object.getName() == null) {
@@ -44,17 +40,17 @@ public class ItemService {
         return object;
     }
 
-    public void validate(Item object) {
-        if (object.getName() == null) {
-            throw new ValidationException("Name не задан", object);
-        } else if (object.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым", object);
-        } else if (object.getDescription() == null) {
-            throw new ValidationException("Description не задан", object);
-        } else if (object.getDescription().isBlank()) {
-            throw new ValidationException("Описание не может быть пустым", object);
-        } else if (object.getAvailable() == null) {
-            throw new ValidationException("Статус не может быть пустым", object);
+    private void validateItem(Item item) {
+        if (item.getName() == null) {
+            throw new ValidationException("Имя не задано");
+        } else if (item.getName().isBlank()) {
+            throw new ValidationException("Название не может быть пустым");
+        } else if (item.getDescription() == null) {
+            throw new ValidationException("Описание не задано");
+        } else if (item.getDescription().isBlank()) {
+            throw new ValidationException("Описание не может быть пустым");
+        } else if (item.getAvailable() == null) {
+            throw new ValidationException("Статус не может быть пустым");
         }
     }
 
@@ -74,16 +70,32 @@ public class ItemService {
         repository.remove(id);
     }
 
-    public Item create(@RequestBody Item object) {
-        validate(object);
-        return repository.add(object);
+    public Item create(ItemDto object, long userId) {
+        var user = userService.get(userId);
+        if (user == null) {
+            throw new NotFoundException(userId, "Пользователь с таким id не существует");
+        }
+        var item = object.toItem(user);
+        validateItem(item);
+        return repository.add(item);
     }
 
-    public Item patch(@RequestBody Item object) {
-        var original = get(object.getId());
-        object = change(original, object);
-        validate(object);
-        return repository.change(object);
+    public Item patch(Item item, long id, long userId) {
+        var user = userService.get(userId);
+        if (user == null) {
+            throw new NotFoundException(userId, "Пользователь с таким id не существует");
+        }
+        var original = get(id);
+        if (original == null) {
+            throw new NotFoundException(id, "Предмет с таким id не существует");
+        }
+        if (userId != original.getOwner().getId()) {
+            throw new NotFoundException(userId, "Пользователь не является владельцем");
+        }
+        item.setId(id);
+        item = change(original, item);
+        validateItem(item);
+        return repository.change(item);
     }
 
     public List<ItemDto> getAll(Long userId) {

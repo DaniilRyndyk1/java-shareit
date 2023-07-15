@@ -1,8 +1,8 @@
 package ru.practicum.shareit.item;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.base.exception.NotFoundException;
 import ru.practicum.shareit.base.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.service.ItemService;
@@ -13,15 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping(path = "/items")
 public class ItemController {
+    private final String userHeaderName = "X-Sharer-User-Id";
     private final ItemService service;
-    private final UserService userService;
-
-    public ItemController(ItemService service, UserService userService) {
-        this.service = service;
-        this.userService = userService;
-    }
 
     @GetMapping("{id}")
     public ItemDto get(@PathVariable long id) {
@@ -29,7 +25,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> getAll(@RequestHeader("X-Sharer-User-Id") long userId) {
+    public List<ItemDto> getAll(@RequestHeader(userHeaderName) long userId) {
         return service.getAll(userId);
     }
 
@@ -39,27 +35,21 @@ public class ItemController {
     }
 
     @PostMapping
-    public ItemDto create(@RequestBody ItemDto object, @RequestHeader("X-Sharer-User-Id") long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
-        }
-        var item = object.toItem(user);
-        return service.create(item).toDto();
+    public ItemDto create(@RequestBody ItemDto object, @RequestHeader(userHeaderName) long userId) {
+        return service.create(object, userId).toDto();
     }
 
     @PatchMapping("{id}")
-    public ItemDto change(@RequestBody ItemDto object, @PathVariable long id, @RequestHeader("X-Sharer-User-Id") long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
+    public ItemDto change(@RequestBody ItemDto object, @PathVariable long id, @RequestHeader(userHeaderName) long userId) {
+        return service.patch(object.toItem(null), id, userId).toDto();
+    }
+
+    @GetMapping("search")
+    public List<ItemDto> search(String text) {
+        if (text.isBlank()) {
+            return new ArrayList<>();
         }
-        var item = service.get(id);
-        if (userId != item.getOwner().getId()) {
-            throw new NotFoundException(userId, "Пользователь не является владельцем");
-        }
-        object.setId(id);
-        return service.patch(object.toItem(null)).toDto();
+        return service.search(text);
     }
 
     @ExceptionHandler
@@ -69,14 +59,6 @@ public class ItemController {
     )
     public Map<String, String> handleWrongData(final ValidationException e) {
         return Map.of("error", e.getMessage());
-    }
-
-    @GetMapping("search")
-    public List<ItemDto> search(String text) {
-        if (text.isBlank()) {
-            return new ArrayList<>();
-        }
-        return service.search(text);
     }
 }
 
