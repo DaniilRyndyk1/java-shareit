@@ -2,11 +2,11 @@ package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
-import ru.practicum.shareit.base.exception.NotFoundException;
-import ru.practicum.shareit.base.exception.ValidationException;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.InMemoryItemRepository;
+import ru.practicum.shareit.item.repository.DatabaseItemRepository;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ItemService {
 
-    private final InMemoryItemRepository repository;
+    private final DatabaseItemRepository repository;
     private final UserService userService;
 
     public Item change(Item original, Item object) {
@@ -55,7 +55,7 @@ public class ItemService {
     }
 
     public Item get(@PathVariable long id) {
-        var object = repository.find(id);
+        var object = repository.findById(id);
         if (object.isEmpty()) {
             throw new NotFoundException(id, object.getClass().getSimpleName());
         }
@@ -63,21 +63,23 @@ public class ItemService {
     }
 
     public List<Item> getAll() {
-        return repository.getAll();
+        return repository.findAll();
     }
 
     public void remove(long id) {
-        repository.remove(id);
+        var item = get(id);
+        repository.delete(item);
     }
 
     public Item create(ItemDto object, long userId) {
+        var item = object.toItem(null);
+        validateItem(item);
         var user = userService.get(userId);
         if (user == null) {
             throw new NotFoundException(userId, "Пользователь с таким id не существует");
         }
-        var item = object.toItem(user);
-        validateItem(item);
-        return repository.add(item);
+       item.setOwner(user);
+        return repository.save(item);
     }
 
     public Item patch(Item item, long id, long userId) {
@@ -95,7 +97,7 @@ public class ItemService {
         item.setId(id);
         item = change(original, item);
         validateItem(item);
-        return repository.change(item);
+        return repository.save(item);
     }
 
     public List<ItemDto> getAll(Long userId) {

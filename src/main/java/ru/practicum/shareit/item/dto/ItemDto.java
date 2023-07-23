@@ -1,12 +1,13 @@
 package ru.practicum.shareit.item.dto;
 
 import lombok.Data;
-import ru.practicum.shareit.base.Model;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
 @Data
-public class ItemDto extends Model {
+public class ItemDto {
+    private Long id;
+    private String name;
     private String description;
     private Boolean available;
 
