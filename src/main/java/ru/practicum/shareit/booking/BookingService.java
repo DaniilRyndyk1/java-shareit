@@ -12,6 +12,7 @@ import ru.practicum.shareit.user.service.UserService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
@@ -116,17 +117,17 @@ public class BookingService {
         var now = LocalDateTime.now();
         switch (state) {
             case "CURRENT":
-                return bookings.stream().filter(x -> x.getStart().isBefore(now) && x.getEnd().isAfter(now)).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> x.getStart().isBefore(now) && x.getEnd().isAfter(now)).map(Booking::toDto).collect(Collectors.toList());
             case "PAST":
-                return bookings.stream().filter(x -> now.isAfter(x.getEnd())).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> now.isAfter(x.getEnd())).map(Booking::toDto).collect(Collectors.toList());
             case "FUTURE":
-                return bookings.stream().filter(x -> now.isBefore(x.getStart()) || now.isEqual(x.getStart())).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> now.isBefore(x.getStart()) || now.isEqual(x.getStart())).map(Booking::toDto).collect(Collectors.toList());
             case "WAITING":
-                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.WAITING)).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.WAITING)).map(Booking::toDto).collect(Collectors.toList());
             case "REJECTED":
-                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.REJECTED)).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.REJECTED)).map(Booking::toDto).collect(Collectors.toList());
             case "ALL":
-                return bookings.stream().map(Booking::toDto).toList();
+                return bookings.stream().map(Booking::toDto).collect(Collectors.toList());
             default:
                 throw new UnsupportedStateException(state);
         }
@@ -141,17 +142,17 @@ public class BookingService {
         var now = LocalDateTime.now();
         switch (state) {
             case "CURRENT":
-                return bookings.stream().filter(x -> x.getStart().isBefore(now) && x.getEnd().isAfter(now)).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> x.getStart().isBefore(now) && x.getEnd().isAfter(now)).map(Booking::toDto).collect(Collectors.toList());
             case "PAST":
-                return bookings.stream().filter(x -> now.isAfter(x.getEnd())).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> now.isAfter(x.getEnd())).map(Booking::toDto).collect(Collectors.toList());
             case "FUTURE":
-                return bookings.stream().filter(x -> now.isBefore(x.getEnd())).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> now.isBefore(x.getEnd())).map(Booking::toDto).collect(Collectors.toList());
             case "WAITING":
-                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.WAITING)).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.WAITING)).map(Booking::toDto).collect(Collectors.toList());
             case "REJECTED":
-                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.REJECTED)).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.REJECTED)).map(Booking::toDto).collect(Collectors.toList());
             case "ALL":
-                return bookings.stream().map(Booking::toDto).toList();
+                return bookings.stream().map(Booking::toDto).collect(Collectors.toList());
             default:
                 throw new UnsupportedStateException(state);
         }
