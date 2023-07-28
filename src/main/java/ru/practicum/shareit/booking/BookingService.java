@@ -9,7 +9,6 @@ import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.user.service.UserService;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -60,6 +59,11 @@ public class BookingService {
         if (item == null) {
             throw new NotFoundException(userId, "Продукт с таким id не существует");
         }
+
+        if (item.getOwner().getId().equals(userId)) {
+            throw new NotFoundException(userId, "Владелец не может забронировать вещь");
+        }
+
         var booking = object.toBooking(user, item);
         validateBooking(booking);
         booking.setStatus(BookingStatus.WAITING);
@@ -103,31 +107,6 @@ public class BookingService {
         return booking;
     }
 
-    public List<BookingDto> getAll(String state, long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
-        }
-        var bookings = repository.findAllByBooker_IdOrderByEndDesc(userId);
-        var now = LocalDateTime.now();
-        switch (state) {
-            case "CURRENT":
-                return bookings.stream().filter(x -> x.getStart().isBefore(now) && x.getEnd().isAfter(now)).map(Booking::toDto).toList();
-            case "PAST":
-                return bookings.stream().filter(x -> now.isAfter(x.getEnd())).map(Booking::toDto).toList();
-            case "FUTURE":
-                return bookings.stream().filter(x -> now.isBefore(x.getStart())).map(Booking::toDto).toList();
-            case "WAITING":
-                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.WAITING)).map(Booking::toDto).toList();
-            case "REJECTED":
-                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.REJECTED)).map(Booking::toDto).toList();
-            case "ALL":
-                return bookings.stream().map(Booking::toDto).toList();
-            default:
-                throw new UnsupportedStateException(state);
-        }
-    }
-
     public List<BookingDto> getItemsAll(String state, long userId) {
         var user = userService.get(userId);
         if (user == null) {
@@ -141,7 +120,32 @@ public class BookingService {
             case "PAST":
                 return bookings.stream().filter(x -> now.isAfter(x.getEnd())).map(Booking::toDto).toList();
             case "FUTURE":
-                return bookings.stream().filter(x -> x.getStart().isAfter(now)).map(Booking::toDto).toList();
+                return bookings.stream().filter(x -> now.isBefore(x.getStart()) || now.isEqual(x.getStart())).map(Booking::toDto).toList();
+            case "WAITING":
+                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.WAITING)).map(Booking::toDto).toList();
+            case "REJECTED":
+                return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.REJECTED)).map(Booking::toDto).toList();
+            case "ALL":
+                return bookings.stream().map(Booking::toDto).toList();
+            default:
+                throw new UnsupportedStateException(state);
+        }
+    }
+
+    public List<BookingDto> getAll(String state, long userId) {
+        var user = userService.get(userId);
+        if (user == null) {
+            throw new NotFoundException(userId, "Пользователь с таким id не существует");
+        }
+        var bookings = repository.findAllByBooker_IdOrderByEndDesc(userId);
+        var now = LocalDateTime.now();
+        switch (state) {
+            case "CURRENT":
+                return bookings.stream().filter(x -> x.getStart().isBefore(now) && x.getEnd().isAfter(now)).map(Booking::toDto).toList();
+            case "PAST":
+                return bookings.stream().filter(x -> now.isAfter(x.getEnd())).map(Booking::toDto).toList();
+            case "FUTURE":
+                return bookings.stream().filter(x -> now.isBefore(x.getEnd())).map(Booking::toDto).toList();
             case "WAITING":
                 return bookings.stream().filter(x -> x.getStatus().equals(BookingStatus.WAITING)).map(Booking::toDto).toList();
             case "REJECTED":

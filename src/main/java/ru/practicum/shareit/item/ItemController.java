@@ -4,7 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.CommentInputDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.ArrayList;
@@ -19,13 +22,13 @@ public class ItemController {
     private final ItemService service;
 
     @GetMapping("{id}")
-    public ItemDto get(@PathVariable long id) {
-        return service.get(id).toDto();
+    public ItemDtoWithBooking get(@PathVariable long id, @RequestHeader(userHeaderName) long userId) {
+        return service.getWithBookings(id, userId);
     }
 
     @GetMapping
-    public List<ItemDto> getAll(@RequestHeader(userHeaderName) long userId) {
-        return service.getAll(userId);
+    public List<ItemDtoWithBooking> getAll(@RequestHeader(userHeaderName) long userId) {
+        return service.getAllWithBookings(userId);
     }
 
     @DeleteMapping("{id}")
@@ -49,6 +52,11 @@ public class ItemController {
             return new ArrayList<>();
         }
         return service.search(text);
+    }
+
+    @PostMapping("{itemId}/comment")
+    public CommentDto createComment(@RequestBody CommentInputDto object, @PathVariable long itemId, @RequestHeader(userHeaderName) long userId) {
+        return service.createComment(object, itemId, userId).toDto();
     }
 
     @ExceptionHandler
