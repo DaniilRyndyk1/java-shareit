@@ -1,7 +1,9 @@
 package ru.practicum.shareit.item.model;
 
 import lombok.Data;
+import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
@@ -48,4 +50,18 @@ public class Item {
        item.setId(getId());
        return item;
    }
+
+    public ItemDtoWithBooking toDtoWithBookings(Booking current, Booking next, Booking last) {
+        var item =  new ItemDtoWithBooking(
+                this.getName(),
+                this.getDescription(),
+                this.getAvailable(),
+                current,
+                next,
+                last,
+                null
+        );
+        item.setId(getId());
+        return item;
+    }
 }
