@@ -176,7 +176,7 @@ public class ItemService {
             throw new ValidationException("У вас нет завершенных бронирований с этим предметом");
         }
 
-        var comment = object.toComment(0l, user, item.get());
+        var comment = object.toComment(0L, user, item.get());
         return commentRepository.save(comment);
     }
 

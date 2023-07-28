@@ -12,8 +12,10 @@ import java.util.List;
 public interface ItemRepository extends JpaRepository<Item, Long> {
     @Query(value = "SELECT b FROM Booking b WHERE item_id = :itemId and status <> 'REJECTED' AND NOW() between start_date AND end_date")
     Booking findCurrentBookingByItem(Long itemId);
+
     @Query(value = "select b from Booking b where b.id in (SELECT b2.id FROM Booking b2 WHERE b2.item.id = :itemId and EXTRACT(epoch FROM b2.start - NOW()) > 0 and status <> 'REJECTED' order by EXTRACT(epoch FROM b2.start - NOW()) desc)")
     List<Booking> findNextBookingByItem(Long itemId);
+
     @Query(value = "select b from Booking b where b.id in (SELECT b2.id FROM Booking b2 WHERE b2.item.id = :itemId and EXTRACT(epoch FROM b2.start - NOW()) <= 0 order by EXTRACT(epoch FROM b2.start - NOW()) desc)")
     List<Booking> findLastBookingByItem(Long itemId);
 

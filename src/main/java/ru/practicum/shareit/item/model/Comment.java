@@ -28,6 +28,7 @@ public class Comment {
     public Comment() {
 
     }
+
     public CommentDto toDto() {
         return new CommentDto(id, text, author.getName(), created);
     }

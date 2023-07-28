@@ -52,6 +52,7 @@ public class BookingController {
         }
         return service.getItemsAll(state, userId);
     }
+
     @ExceptionHandler(UnsupportedStateException.class)
     public ResponseEntity<Map<String, String>> handleException(
             UnsupportedStateException e)
