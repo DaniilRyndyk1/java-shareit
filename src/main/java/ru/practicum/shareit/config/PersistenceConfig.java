@@ -19,7 +19,6 @@ import java.util.Properties;
 public class PersistenceConfig {
     @Autowired
     private Environment environment;
-
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
@@ -57,3 +56,4 @@ public class PersistenceConfig {
         return transactionManager;
     }
 }
+
