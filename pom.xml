@@ -15,11 +15,11 @@
 
 	<name>ShareIt</name>
 
-    <properties>
-        <java.version>11</java.version>
-        <maven.compiler.source>19</maven.compiler.source>
-        <maven.compiler.target>19</maven.compiler.target>
-    </properties>
+	<properties>
+		<java.version>11</java.version>
+		<maven.compiler.source>19</maven.compiler.source>
+		<maven.compiler.target>19</maven.compiler.target>
+	</properties>
 
 	<dependencies>
 		<dependency>
