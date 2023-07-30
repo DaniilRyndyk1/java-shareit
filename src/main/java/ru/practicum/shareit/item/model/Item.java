@@ -1,7 +1,8 @@
 package ru.practicum.shareit.item.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.request.ItemRequest;
@@ -12,15 +13,13 @@ import javax.persistence.*;
 @Entity
 @Table(name = "item")
 @Data
+@AllArgsConstructor
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "name", length = 255, nullable = false)
     private String name;
-    @Column(name = "description", length = 512, nullable = false)
     private String description;
-    @Column(name = "available", nullable = false)
     private Boolean available;
     @ManyToOne
     @JoinColumn(name = "owner_id")
@@ -33,35 +32,11 @@ public class Item {
 
     }
 
-   public Item(String name, String description, Boolean available, User owner, ItemRequest request) {
-       this.setName(name);
-       this.setDescription(description);
-       this.setAvailable(available);
-       this.setOwner(owner);
-       this.setRequest(request);
-   }
-
-   public ItemDto toDto() {
-       var item =  new ItemDto(
-               this.getName(),
-               this.getDescription(),
-               this.getAvailable()
-       );
-       item.setId(getId());
-       return item;
-   }
+    public ItemDto toDto() {
+       return new ItemDto(id, name, description, available);
+    }
 
     public ItemDtoWithBooking toDtoWithBookings(Booking current, Booking next, Booking last) {
-        var item =  new ItemDtoWithBooking(
-                this.getName(),
-                this.getDescription(),
-                this.getAvailable(),
-                current,
-                next,
-                last,
-                null
-        );
-        item.setId(getId());
-        return item;
+        return new ItemDtoWithBooking(id, name, description, available, current, next, last, null);
     }
 }

@@ -1,12 +1,12 @@
 package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
-import ru.practicum.shareit.booking.Booking;
-import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.CommentInputDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-@org.springframework.stereotype.Service
+@Service
 @RequiredArgsConstructor
 public class ItemService {
 
@@ -29,23 +29,23 @@ public class ItemService {
     private final CommentRepository commentRepository;
     private final UserService userService;
 
-    public Item change(Item original, Item object) {
-        if (object.getName() == null) {
-            object.setName(original.getName());
+    public Item change(Item original, Item item) {
+        if (item.getName() == null) {
+            item.setName(original.getName());
         }
-        if (object.getDescription() == null) {
-            object.setDescription(original.getDescription());
+        if (item.getDescription() == null) {
+            item.setDescription(original.getDescription());
         }
-        if (object.getAvailable() == null) {
-            object.setAvailable(original.getAvailable());
+        if (item.getAvailable() == null) {
+            item.setAvailable(original.getAvailable());
         }
-        if (object.getOwner() == null) {
-            object.setOwner(original.getOwner());
+        if (item.getOwner() == null) {
+            item.setOwner(original.getOwner());
         }
-        if (object.getRequest() == null) {
-            object.setRequest(original.getRequest());
+        if (item.getRequest() == null) {
+            item.setRequest(original.getRequest());
         }
-        return object;
+        return item;
     }
 
     private void validateItem(Item item) {
@@ -62,30 +62,27 @@ public class ItemService {
         }
     }
 
-    public Item get(@PathVariable long id) {
-        var object = itemRepository.findById(id);
-        if (object.isEmpty()) {
-            throw new NotFoundException(id, object.getClass().getSimpleName());
+    public Item get(@PathVariable Long id) {
+        var item = itemRepository.findById(id);
+        if (item.isEmpty()) {
+            throw new NotFoundException("Предмет с таким id не существует");
         }
 
-        return object.get();
+        return item.get();
     }
 
-    public ItemDtoWithBooking getWithBookings(long id, long userId) {
+    public ItemDtoWithBooking getWithBookings(Long id, Long userId) {
         var object = itemRepository.findById(id);
         if (object.isEmpty()) {
-            throw new NotFoundException(id, "Предмет отсутствует");
+            throw new NotFoundException("Предмет с таким id не существует");
         }
+
         var item = object.get();
         Booking current = null;
         Booking next = null;
         Booking last = null;
         if (item.getOwner().getId().equals(userId)) {
             current = itemRepository.findCurrentBookingByItem(item.getId());
-
-            if (item.getId() == 2 && userId == 4) {
-                var test = 1;
-            }
 
             var bookings = itemRepository.findNextBookingByItem(item.getId());
             if (bookings.size() != 0) {
@@ -97,28 +94,28 @@ public class ItemService {
                 last = bookings.get(0);
             }
         }
-        var itemDto = item.toDtoWithBookings(current, next, last);
+        var dto = item.toDtoWithBookings(current, next, last);
         var comments = commentRepository.findAllByItem_Id(item.getId());
-        var commentsDto = new ArrayList<CommentDto>();
+        var commentsDto = dto.getComments();
         for (Comment comment : comments) {
             commentsDto.add(comment.toDto());
         }
 
-        itemDto.setComments(commentsDto);
+        dto.setComments(commentsDto);
 
-        return itemDto;
+        return dto;
     }
 
-    public List<ItemDtoWithBooking> getAllWithBookings(long userId) {
-        var object = userService.get(userId);
-        if (object == null) {
-            throw new NotFoundException(userId, "Предмет не найден");
+    public List<ItemDtoWithBooking> getAllWithBookings(Long userId) {
+        var user = userService.get(userId);
+        if (user == null) {
+            throw new NotFoundException("Пользователь с таким id не существует");
         }
+
         var items = itemRepository.findAllByOwner_IdOrderById(userId);
         var result = new ArrayList<ItemDtoWithBooking>();
         for (Item item : items) {
-            var itemDto = this.getWithBookings(item.getId(), item.getOwner().getId());
-            result.add(itemDto);
+            result.add(getWithBookings(item.getId(), item.getOwner().getId()));
         }
         return result;
     }
@@ -127,43 +124,41 @@ public class ItemService {
         return itemRepository.findAll();
     }
 
-    public void remove(long id) {
+    public void remove(Long id) {
         itemRepository.delete(get(id));
     }
 
-    public Item create(ItemDto object, long userId) {
+    public Item create(ItemDto object, Long userId) {
         var item = object.toItem(null);
         validateItem(item);
         var user = userService.get(userId);
         if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
+            throw new NotFoundException("Пользователь с таким id не существует");
         }
         item.setOwner(user);
         return itemRepository.save(item);
     }
 
-    public Comment createComment(CommentInputDto object, long itemId, long userId) {
+    public Comment createComment(CommentInputDto object, Long itemId, Long userId) {
         if (object.getText().isEmpty()) {
             throw new ValidationException("Текст отзыва пустой");
         }
 
         var user = userService.get(userId);
         if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
+            throw new NotFoundException("Пользователь с таким id не существует");
         }
         var item = itemRepository.findById(itemId);
         if (item.isEmpty()) {
-            throw new NotFoundException(userId, "Предмет с таким id не существует");
+            throw new NotFoundException("Предмет с таким id не существует");
         }
 
         var bookings = itemRepository.findBookingsByItemAndUser(itemId, userId);
-
         if (bookings.size() == 0) {
             throw new ValidationException("У предмета не было бронирований");
         }
 
         Booking oldestBooking = null;
-
         for (Booking booking: bookings) {
             if (!booking.getStatus().equals(BookingStatus.REJECTED)) {
                 oldestBooking = booking;
@@ -175,9 +170,7 @@ public class ItemService {
             throw new ValidationException("У вас не было бронирований с этим предметом");
         }
 
-        var now = LocalDateTime.now();
-
-        if (oldestBooking.getEnd().isAfter(now)) {
+        if (oldestBooking.getEnd().isAfter(LocalDateTime.now())) {
             throw new ValidationException("У вас нет завершенных бронирований с этим предметом");
         }
 
@@ -185,18 +178,21 @@ public class ItemService {
         return commentRepository.save(comment);
     }
 
-    public Item patch(Item item, long id, long userId) {
+    public Item patch(Item item, Long id, Long userId) {
         var user = userService.get(userId);
         if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
+            throw new NotFoundException("Пользователь с таким id не существует");
         }
+
         var original = get(id);
         if (original == null) {
-            throw new NotFoundException(id, "Предмет с таким id не существует");
+            throw new NotFoundException("Предмет с таким id не существует");
         }
-        if (userId != original.getOwner().getId()) {
-            throw new NotFoundException(userId, "Пользователь не является владельцем");
+
+        if (!userId.equals(original.getOwner().getId())) {
+            throw new NotFoundException("Пользователь не является владельцем");
         }
+
         item.setId(id);
         item = change(original, item);
         validateItem(item);

@@ -5,11 +5,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(
         value = HttpStatus.BAD_REQUEST,
-        reason = "Объект не найден"
+        reason = "Ошибка валидации"
 )
 public class ValidationException extends RuntimeException {
 
     public ValidationException(String message) {
-        super("При создании объекта возникло исключение: " + message);
+        super(message);
     }
 }

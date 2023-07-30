@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 )
 public class NotFoundException extends RuntimeException {
 
-    public NotFoundException(long id, String name) {
-        super(String.format("Не удалось найти {0} id = {1}", name, id));
+    public NotFoundException(String message) {
+        super(message);
     }
 }
