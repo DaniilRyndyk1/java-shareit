@@ -82,6 +82,11 @@ public class ItemService {
         Booking last = null;
         if (item.getOwner().getId().equals(userId)) {
             current = itemRepository.findCurrentBookingByItem(item.getId());
+
+            if (item.getId() == 2 && userId == 4) {
+                var test = 1;
+            }
+
             var bookings = itemRepository.findNextBookingByItem(item.getId());
             if (bookings.size() != 0) {
                 next = bookings.get(0);
