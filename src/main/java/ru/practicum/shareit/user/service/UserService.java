@@ -25,23 +25,8 @@ public class UserService {
         return user;
     }
 
-    private void validateUser(User user) {
-        String email = user.getEmail();
-        if (email == null) {
-            throw new ValidationException("Email не задан");
-        } else if (email.isBlank()) {
-            throw new ValidationException("Электронная почта не может быть пустой");
-        }  else if (!email.contains("@")) {
-            throw new ValidationException("Электронная почта должна содержать символ @");
-        }
-    }
-
     public User get(Long id) {
-        var user = repository.findById(id);
-        if (user.isEmpty()) {
-            throw new NotFoundException("Пользователь с таким id не найден");
-        }
-        return user.get();
+        return repository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким id не найден"));
     }
 
     public List<User> getAll() {
@@ -62,5 +47,16 @@ public class UserService {
         user = change(original, user);
         validateUser(user);
         return repository.save(user);
+    }
+
+    private void validateUser(User user) {
+        String email = user.getEmail();
+        if (email == null) {
+            throw new ValidationException("Email не задан");
+        } else if (email.isBlank()) {
+            throw new ValidationException("Электронная почта не может быть пустой");
+        }  else if (!email.contains("@")) {
+            throw new ValidationException("Электронная почта должна содержать символ @");
+        }
     }
 }

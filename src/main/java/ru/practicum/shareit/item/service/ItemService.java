@@ -2,7 +2,6 @@ package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -48,36 +47,12 @@ public class ItemService {
         return item;
     }
 
-    private void validateItem(Item item) {
-        if (item.getName() == null) {
-            throw new ValidationException("Имя не задано");
-        } else if (item.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым");
-        } else if (item.getDescription() == null) {
-            throw new ValidationException("Описание не задано");
-        } else if (item.getDescription().isBlank()) {
-            throw new ValidationException("Описание не может быть пустым");
-        } else if (item.getAvailable() == null) {
-            throw new ValidationException("Статус не может быть пустым");
-        }
-    }
-
-    public Item get(@PathVariable Long id) {
-        var item = itemRepository.findById(id);
-        if (item.isEmpty()) {
-            throw new NotFoundException("Предмет с таким id не существует");
-        }
-
-        return item.get();
+    public Item get(Long id) {
+        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Предмет с таким id не существует"));
     }
 
     public ItemDtoWithBooking getWithBookings(Long id, Long userId) {
-        var object = itemRepository.findById(id);
-        if (object.isEmpty()) {
-            throw new NotFoundException("Предмет с таким id не существует");
-        }
-
-        var item = object.get();
+        var item = get(id);
         Booking current = null;
         Booking next = null;
         Booking last = null;
@@ -107,11 +82,7 @@ public class ItemService {
     }
 
     public List<ItemDtoWithBooking> getAllWithBookings(Long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-
+        userService.get(userId);
         var items = itemRepository.findAllByOwner_IdOrderById(userId);
         var result = new ArrayList<ItemDtoWithBooking>();
         for (Item item : items) {
@@ -132,9 +103,6 @@ public class ItemService {
         var item = object.toItem(null);
         validateItem(item);
         var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
         item.setOwner(user);
         return itemRepository.save(item);
     }
@@ -145,13 +113,7 @@ public class ItemService {
         }
 
         var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-        var item = itemRepository.findById(itemId);
-        if (item.isEmpty()) {
-            throw new NotFoundException("Предмет с таким id не существует");
-        }
+        var item = get(itemId);
 
         var bookings = itemRepository.findBookingsByItemAndUser(itemId, userId);
         if (bookings.size() == 0) {
@@ -174,20 +136,13 @@ public class ItemService {
             throw new ValidationException("У вас нет завершенных бронирований с этим предметом");
         }
 
-        var comment = object.toComment(0L, user, item.get());
+        var comment = object.toComment(0L, user, item);
         return commentRepository.save(comment);
     }
 
     public Item patch(Item item, Long id, Long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-
+        userService.get(userId);
         var original = get(id);
-        if (original == null) {
-            throw new NotFoundException("Предмет с таким id не существует");
-        }
 
         if (!userId.equals(original.getOwner().getId())) {
             throw new NotFoundException("Пользователь не является владельцем");
@@ -219,5 +174,19 @@ public class ItemService {
         }
 
         return result;
+    }
+
+    private void validateItem(Item item) {
+        if (item.getName() == null) {
+            throw new ValidationException("Имя не задано");
+        } else if (item.getName().isBlank()) {
+            throw new ValidationException("Название не может быть пустым");
+        } else if (item.getDescription() == null) {
+            throw new ValidationException("Описание не задано");
+        } else if (item.getDescription().isBlank()) {
+            throw new ValidationException("Описание не может быть пустым");
+        } else if (item.getAvailable() == null) {
+            throw new ValidationException("Статус не может быть пустым");
+        }
     }
 }

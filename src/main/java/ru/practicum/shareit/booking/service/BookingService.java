@@ -23,6 +23,94 @@ public class BookingService {
     private final UserService userService;
     private final ItemService itemService;
 
+    public Booking create(BookingInputDto dto, Long userId) {
+        var user = userService.get(userId);
+
+        var itemId = dto.getItemId();
+        var item = itemService.get(itemId);
+
+        if (item.getOwner().getId().equals(userId)) {
+            throw new NotFoundException("Владелец не может забронировать вещь");
+        }
+
+        var booking = dto.toBooking(user, item);
+        validateBooking(booking);
+        booking.setStatus(BookingStatus.WAITING);
+        return repository.save(booking);
+    }
+
+    public Booking approve(Long bookingId, Long userId, Boolean approved) {
+        var booking = findById(bookingId);
+
+        if (booking.getBooker().getId().equals(userId)) {
+            throw new NotFoundException("Пользователь является арендатором");
+        } else if (!booking.getItem().getOwner().getId().equals(userId)) {
+            throw new RuntimeException("Пользователь не является владельцем");
+        } else if (!booking.getStatus().equals(BookingStatus.WAITING)) {
+            throw new ValidationException("Статус уже был изменен");
+        }
+
+        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
+
+        return repository.save(booking);
+    }
+
+    public Booking get(Long bookingId, Long userId) {
+        var booking = findById(bookingId);
+
+        userService.get(userId);
+        var bookerId = booking.getBooker().getId();
+        var ownerId = booking.getItem().getOwner().getId();
+
+        if (!bookerId.equals(userId) && !ownerId.equals(userId)) {
+            throw new NotFoundException("Нет прав");
+        }
+
+        return booking;
+    }
+
+    public List<BookingDto> getBookingsByOwnerAndState(String state, Long userId) {
+        userService.get(userId);
+        var now = LocalDateTime.now();
+        switch (state) {
+            case "CURRENT":
+                return repository.findAllByItem_Owner_IdAndStartBeforeAndEndAfter(userId, now, now);
+            case "PAST":
+                return repository.findAllByItem_Owner_IdAndEndLessThanEqualOrderByStartDesc(userId, now);
+            case "FUTURE":
+                return repository.findAllByItem_Owner_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now);
+            case "WAITING":
+                return repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.WAITING);
+            case "REJECTED":
+                return repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.REJECTED);
+            case "ALL":
+                return repository.findAllByItem_Owner_IdOrderByEndDesc(userId);
+            default:
+                throw new UnsupportedStateException(state);
+        }
+    }
+
+    public List<BookingDto> getBookingsByBookerAndState(String state, Long userId) {
+        userService.get(userId);
+        var now = LocalDateTime.now();
+        switch (state) {
+            case "CURRENT":
+                return repository.findAllByBooker_IdAndStartBeforeAndEndAfter(userId, now, now);
+            case "PAST":
+                return repository.findAllByBooker_IdAndEndLessThanEqualOrderByStartDesc(userId, now);
+            case "FUTURE":
+                return repository.findAllByBooker_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now);
+            case "WAITING":
+                return repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.WAITING);
+            case "REJECTED":
+                return repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.REJECTED);
+            case "ALL":
+                return repository.findAllByBooker_IdOrderByEndDesc(userId);
+            default:
+                throw new UnsupportedStateException(state);
+        }
+    }
+
     private void validateBooking(Booking booking) {
         if (booking.getStart() == null) {
             throw new ValidationException("Время начала не задано");
@@ -55,117 +143,8 @@ public class BookingService {
         }
     }
 
-    public Booking create(BookingInputDto dto, Long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-
-        var itemId = dto.getItemId();
-        var item = itemService.get(itemId);
-        if (item == null) {
-            throw new NotFoundException("Продукт с таким id не существует");
-        }
-
-        if (item.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Владелец не может забронировать вещь");
-        }
-
-        var booking = dto.toBooking(user, item);
-        validateBooking(booking);
-        booking.setStatus(BookingStatus.WAITING);
-        return repository.save(booking);
-    }
-
-    public Booking approve(Long bookingId, Long userId, Boolean approved) {
-        var option = repository.findById(bookingId);
-        if (option.isEmpty()) {
-            throw new NotFoundException("Бронирование с таким id не существует");
-        }
-
-        var booking = option.get();
-        if (booking.getBooker().getId().equals(userId)) {
-            throw new NotFoundException("Пользователь является арендатором");
-        } else if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new RuntimeException("Пользователь не является владельцем");
-        } else if (!booking.getStatus().equals(BookingStatus.WAITING)) {
-            throw new ValidationException("Статус уже был изменен");
-        }
-
-        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
-
-        return repository.save(booking);
-    }
-
-    public Booking get(Long bookingId, Long userId) {
-        var option = repository.findById(bookingId);
-        if (option.isEmpty()) {
-            throw new NotFoundException("Бронирование с таким id не существует");
-        }
-
-        var booking = option.get();
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-
-        var bookerId = booking.getBooker().getId();
-        var ownerId = booking.getItem().getOwner().getId();
-
-        if (!bookerId.equals(userId) && !ownerId.equals(userId)) {
-            throw new NotFoundException("Нет прав");
-        }
-
-        return booking;
-    }
-
-    public List<BookingDto> getBookingsByOwnerAndState(String state, Long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-
-        var now = LocalDateTime.now();
-        switch (state) {
-            case "CURRENT":
-                return repository.findAllByItem_Owner_IdAndStartBeforeAndEndAfter(userId, now, now);
-            case "PAST":
-                return repository.findAllByItem_Owner_IdAndEndLessThanEqualOrderByStartDesc(userId, now);
-            case "FUTURE":
-                return repository.findAllByItem_Owner_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now);
-            case "WAITING":
-                return repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.WAITING);
-            case "REJECTED":
-                return repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.REJECTED);
-            case "ALL":
-                return repository.findAllByItem_Owner_IdOrderByEndDesc(userId);
-            default:
-                throw new UnsupportedStateException(state);
-        }
-    }
-
-    public List<BookingDto> getBookingsByBookerAndState(String state, Long userId) {
-        var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
-
-        var now = LocalDateTime.now();
-        switch (state) {
-            case "CURRENT":
-                return repository.findAllByBooker_IdAndStartBeforeAndEndAfter(userId, now, now);
-            case "PAST":
-                return repository.findAllByBooker_IdAndEndLessThanEqualOrderByStartDesc(userId, now);
-            case "FUTURE":
-                return repository.findAllByBooker_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now);
-            case "WAITING":
-                return repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.WAITING);
-            case "REJECTED":
-                return repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.REJECTED);
-            case "ALL":
-                return repository.findAllByBooker_IdOrderByEndDesc(userId);
-            default:
-                throw new UnsupportedStateException(state);
-        }
+    private Booking findById(Long bookingId) {
+        return repository.findById(bookingId).
+                orElseThrow(() -> new NotFoundException("Бронирование с таким id не существует"));
     }
 }

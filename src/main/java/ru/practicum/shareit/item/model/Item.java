@@ -1,19 +1,20 @@
 package ru.practicum.shareit.item.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
-import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
 
 @Entity
 @Table(name = "item")
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,10 +28,6 @@ public class Item {
     @ManyToOne
     @JoinColumn(name = "item_request_id")
     private ItemRequest request;
-
-    public Item() {
-
-    }
 
     public ItemDto toDto() {
        return new ItemDto(id, name, description, available);

@@ -16,7 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping(path = "/bookings")
 public class BookingController {
-    private final String userHeaderName = "X-Sharer-User-Id";
+    private static final String userHeaderName = "X-Sharer-User-Id";
     private final BookingService service;
 
     @PostMapping
