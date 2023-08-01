@@ -1,14 +1,11 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.base.exception.ValidationException;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,7 +15,7 @@ public class UserController {
     private final UserService service;
 
     @GetMapping("{id}")
-    public User get(@PathVariable long id) {
+    public User get(@PathVariable Long id) {
         return service.get(id);
     }
 
@@ -28,7 +25,7 @@ public class UserController {
     }
 
     @DeleteMapping("{id}")
-    public void delete(@PathVariable long id) {
+    public void delete(@PathVariable Long id) {
         service.remove(id);
     }
 
@@ -38,17 +35,8 @@ public class UserController {
     }
 
     @PatchMapping("{id}")
-    public User change(@RequestBody User object, @PathVariable long id) {
-        object.setId(id);
-        return service.patch(object);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(
-            value = HttpStatus.BAD_REQUEST,
-            reason = "Данные не корректны"
-    )
-    public Map<String, String> handleWrongData(final ValidationException e) {
-        return Map.of("error", e.getMessage());
+    public User change(@RequestBody User user, @PathVariable Long id) {
+        user.setId(id);
+        return service.patch(user);
     }
 }

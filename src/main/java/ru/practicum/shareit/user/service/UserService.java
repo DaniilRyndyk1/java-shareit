@@ -1,74 +1,66 @@
 package ru.practicum.shareit.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import ru.practicum.shareit.base.exception.EmailConflictException;
-import ru.practicum.shareit.base.exception.NotFoundException;
-import ru.practicum.shareit.base.exception.ValidationException;
+import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.repository.InMemoryUserRepository;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
-import java.util.Objects;
 
-@org.springframework.stereotype.Service
+@Service
 @RequiredArgsConstructor
 public class UserService {
 
-    private final InMemoryUserRepository repository;
+    private final UserRepository repository;
 
-    public User change(User original, User object) {
-        if (object.getName() == null) {
-            object.setName(original.getName());
+    public User change(User original, User user) {
+        if (user.getName() == null) {
+            user.setName(original.getName());
         }
-        if (object.getEmail() == null) {
-            object.setEmail(original.getEmail());
+        if (user.getEmail() == null) {
+            user.setEmail(original.getEmail());
         }
-        return object;
+        return user;
     }
 
     private void validateUser(User user) {
         String email = user.getEmail();
-        var userWithSameEmail = repository.getAll().stream().filter(x -> x.getEmail().equals(email)).findFirst();
-        if (user.getEmail() == null) {
+        if (email == null) {
             throw new ValidationException("Email не задан");
-        } else if (user.getEmail().isBlank()) {
+        } else if (email.isBlank()) {
             throw new ValidationException("Электронная почта не может быть пустой");
-        }  else if (!user.getEmail().contains("@")) {
+        }  else if (!email.contains("@")) {
             throw new ValidationException("Электронная почта должна содержать символ @");
-        }  else if (userWithSameEmail.isPresent()) {
-            if (!Objects.equals(userWithSameEmail.get().getId(), user.getId())) {
-                throw new EmailConflictException();
-            }
         }
     }
 
-    public User get(@PathVariable long id) {
-        var object = repository.find(id);
-        if (object.isEmpty()) {
-            throw new NotFoundException(id, object.getClass().getSimpleName());
+    public User get(Long id) {
+        var user = repository.findById(id);
+        if (user.isEmpty()) {
+            throw new NotFoundException("Пользователь с таким id не найден");
         }
-        return object.get();
+        return user.get();
     }
 
     public List<User> getAll() {
-        return repository.getAll();
+        return repository.findAll();
     }
 
-    public void remove(long id) {
-        repository.remove(id);
+    public void remove(Long id) {
+        repository.delete(get(id));
     }
 
-    public User create(@RequestBody User object) {
-        validateUser(object);
-        return repository.add(object);
+    public User create(User user) {
+        validateUser(user);
+        return repository.save(user);
     }
 
-    public User patch(@RequestBody User object) {
-        var original = get(object.getId());
-        object = change(original, object);
-        validateUser(object);
-        return repository.change(object);
+    public User patch(User user) {
+        var original = get(user.getId());
+        user = change(original, user);
+        validateUser(user);
+        return repository.save(user);
     }
 }
