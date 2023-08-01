@@ -144,7 +144,6 @@ public class BookingService {
     }
 
     private Booking findById(Long bookingId) {
-        return repository.findById(bookingId).
-                orElseThrow(() -> new NotFoundException("Бронирование с таким id не существует"));
+        return repository.findById(bookingId).orElseThrow(() -> new NotFoundException("Бронирование с таким id не существует"));
     }
 }
