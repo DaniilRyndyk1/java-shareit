@@ -18,6 +18,7 @@ public class CommentMapper {
                 comment.getAuthor().getName(),
                 comment.getCreated());
     }
+
     public Comment toComment(CommentInputDto dto, Long id, Item item, User user, LocalDateTime created) {
         return new Comment(
                 id,
