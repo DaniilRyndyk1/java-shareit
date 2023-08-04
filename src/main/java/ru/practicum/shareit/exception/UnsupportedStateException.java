@@ -1,7 +1,9 @@
 package ru.practicum.shareit.exception;
 
+import ru.practicum.shareit.booking.State;
+
 public class UnsupportedStateException extends RuntimeException {
-    public UnsupportedStateException(String state) {
-        super("Unknown state: " + state);
+    public UnsupportedStateException(State state) {
+        super("Unknown state: " + state.name());
     }
 }

@@ -1,20 +1,15 @@
 package ru.practicum.shareit.item.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.practicum.shareit.item.model.Comment;
-import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.model.User;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
-@AllArgsConstructor
+@NoArgsConstructor
 @Data
 public class CommentInputDto {
+    @Size(max = 2048)
+    @NotBlank
     private String text;
-    private Long itemId;
-
-    public Comment toComment(Long id, User author, Item item) {
-        return new Comment(id, text, item, author, LocalDateTime.now());
-    }
 }

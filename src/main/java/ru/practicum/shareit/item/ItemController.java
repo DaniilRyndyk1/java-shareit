@@ -1,30 +1,34 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.Config;
+import ru.practicum.shareit.groups.Create;
+import ru.practicum.shareit.groups.Update;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.CommentInputDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.service.ItemService;
 
-import java.util.ArrayList;
+import javax.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/items")
 public class ItemController {
-    private final String userHeaderName = "X-Sharer-User-Id";
     private final ItemService service;
 
     @GetMapping("{id}")
-    public ItemDtoWithBooking get(@PathVariable Long id, @RequestHeader(userHeaderName) Long userId) {
+    public ItemDtoWithBooking get(@PathVariable Long id, @RequestHeader(Config.userHeaderName) Long userId) {
         return service.getWithBookings(id, userId);
     }
 
     @GetMapping
-    public List<ItemDtoWithBooking> getAll(@RequestHeader(userHeaderName) Long userId) {
+    public List<ItemDtoWithBooking> getAll(@RequestHeader(Config.userHeaderName) Long userId) {
         return service.getAllWithBookings(userId);
     }
 
@@ -34,26 +38,26 @@ public class ItemController {
     }
 
     @PostMapping
-    public ItemDto create(@RequestBody ItemDto dto, @RequestHeader(userHeaderName) Long userId) {
-        return service.create(dto, userId).toDto();
+    public ItemDto create(@Validated(Create.class) @RequestBody ItemDto dto, @RequestHeader(Config.userHeaderName) Long userId) {
+        return service.create(dto, userId);
     }
 
     @PatchMapping("{id}")
-    public ItemDto change(@RequestBody ItemDto dto, @PathVariable Long id, @RequestHeader(userHeaderName) Long userId) {
-        return service.patch(dto.toItem(null), id, userId).toDto();
+    public ItemDto change(@Validated(Update.class) @RequestBody ItemDto dto, @PathVariable Long id, @RequestHeader(Config.userHeaderName) Long userId) {
+        return service.patch(dto, id, userId);
     }
 
     @GetMapping("search")
     public List<ItemDto> search(String text) {
         if (text.isBlank()) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
         return service.search(text);
     }
 
     @PostMapping("{itemId}/comment")
-    public CommentDto createComment(@RequestBody CommentInputDto dto, @PathVariable Long itemId, @RequestHeader(userHeaderName) Long userId) {
-        return service.createComment(dto, itemId, userId).toDto();
+    public CommentDto createComment(@Valid @RequestBody CommentInputDto dto, @PathVariable Long itemId, @RequestHeader(Config.userHeaderName) Long userId) {
+        return service.createComment(dto, itemId, userId);
     }
 }
 
