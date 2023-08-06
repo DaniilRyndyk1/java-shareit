@@ -1,8 +1,9 @@
 package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.booking.BookingMapper;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.dto.BookingInfoDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
@@ -19,6 +20,9 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.request.mapper.ItemRequestMapper;
+import ru.practicum.shareit.request.model.ItemRequest;
+import ru.practicum.shareit.request.service.ItemRequestService;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
@@ -37,6 +41,7 @@ public class ItemService {
     private final CommentRepository commentRepository;
     private final BookingRepository bookingRepository;
     private final UserService userService;
+    private final ItemRequestService itemRequestService;
     private final BookingMapper bookingMapper;
     private final ItemMapper itemMapper;
     private final CommentMapper commentMapper;
@@ -78,9 +83,9 @@ public class ItemService {
         return dto;
     }
 
-    public List<ItemDtoWithBooking> getAllWithBookings(Long userId) {
+    public List<ItemDtoWithBooking> getAllWithBookings(Integer from, Integer size, Long userId) {
         userService.get(userId);
-        var items = itemRepository.findAllByOwner_IdOrderById(userId);
+        var items = itemRepository.findAllByOwner_IdOrderById(userId, PageRequest.of(from / size, size));
         var result = new ArrayList<ItemDtoWithBooking>();
 
         var comments = commentRepository.findByItemIn(items)
@@ -139,18 +144,19 @@ public class ItemService {
         return result;
     }
 
-    public List<Item> getAll() {
-        return itemRepository.findAll();
-    }
-
     public void remove(Long id) {
         itemRepository.delete(get(id));
     }
 
     public ItemDto create(ItemDto dto, Long userId) {
-        var item = itemMapper.toItem(null, dto);
         var user = userService.get(userId);
-        item.setOwner(user);
+
+        ItemRequest request = null;
+        if (dto.getRequestId() != null) {
+            request = itemRequestService.get(dto.getRequestId());
+        }
+
+        var item = itemMapper.toItem(user, dto, request);
         return itemMapper.toDto(itemRepository.save(item));
     }
 
@@ -206,25 +212,8 @@ public class ItemService {
         return itemMapper.toDto(itemRepository.save(item));
     }
 
-    public List<ItemDto> search(String text) {
+    public List<ItemDto> search(String text, Integer from, Integer size) {
         text = text.toLowerCase();
-//        var items = getAll();
-//        var result = new ArrayList<ItemDto>();
-//        var pattern = Pattern.compile(text);
-//        for (var item : items) {
-//            if (item.getAvailable()) {
-//                var matcher = pattern.matcher(item.getName().toLowerCase());
-//                var dto = itemMapper.toDto(item);
-//                if (matcher.find()) {
-//                    result.add(dto);
-//                    continue;
-//                }
-//                matcher = pattern.matcher(item.getDescription().toLowerCase());
-//                if (matcher.find()) {
-//                    result.add(dto);
-//                }
-//            }
-//        }
-        return itemRepository.findByText(text).stream().map(itemMapper::toDto).collect(Collectors.toList());
+        return itemRepository.findByText(text, PageRequest.of(from / size, size)).stream().map(itemMapper::toDto).collect(Collectors.toList());
     }
 }

@@ -1,10 +1,12 @@
 package ru.practicum.shareit.request.model;
 
 import lombok.*;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "item_request")
@@ -20,5 +22,8 @@ public class ItemRequest {
     @ManyToOne
     @JoinColumn(name = "requestor_id")
     private User requestor;
-    private LocalDate created;
+    private LocalDateTime created;
+    @OneToMany
+    @JoinColumn(name = "item_request_id")
+    private Set<Item> items;
 }

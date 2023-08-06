@@ -6,6 +6,7 @@ import ru.practicum.shareit.Config;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.exception.ValidationException;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -32,12 +33,18 @@ public class BookingController {
     }
 
     @GetMapping
-    public List<BookingDto> getBookings(@RequestParam(defaultValue = "ALL") State state, @RequestHeader(Config.userHeaderName) Long userId) {
-        return service.getBookingsByBookerAndState(state, userId);
+    public List<BookingDto> getBookings(@RequestParam(defaultValue = "0") Integer from, @RequestParam(defaultValue = "10") Integer size, @RequestParam(defaultValue = "ALL") State state, @RequestHeader(Config.userHeaderName) Long userId) {
+        if (size <= 0 || from < 0) {
+            throw new ValidationException("Переданы неверные параметры");
+        }
+        return service.getBookingsByBookerAndState(state, userId, from, size);
     }
 
     @GetMapping("owner")
-    public List<BookingDto> getItemsBookings(@RequestParam(defaultValue = "ALL") State state, @RequestHeader(Config.userHeaderName) Long userId) {
-        return service.getBookingsByOwnerAndState(state, userId);
+    public List<BookingDto> getItemsBookings(@RequestParam(defaultValue = "0") Integer from, @RequestParam(defaultValue = "10") Integer size, @RequestParam(defaultValue = "ALL") State state, @RequestHeader(Config.userHeaderName) Long userId) {
+        if (size <= 0 || from < 0) {
+            throw new ValidationException("Переданы неверные параметры");
+        }
+        return service.getBookingsByOwnerAndState(state, userId, from, size);
     }
 }

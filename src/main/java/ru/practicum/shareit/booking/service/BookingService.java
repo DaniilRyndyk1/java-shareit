@@ -1,8 +1,10 @@
 package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.booking.BookingMapper;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.State;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -72,55 +74,57 @@ public class BookingService {
         return mapper.toDto(booking);
     }
 
-    public List<BookingDto> getBookingsByOwnerAndState(State state, Long userId) {
+    public List<BookingDto> getBookingsByOwnerAndState(State state, Long userId, Integer from, Integer size) {
         userService.get(userId);
         var now = LocalDateTime.now();
-        List<Booking> result;
+        var pageRequest = PageRequest.of(from / size, size);
+        Page<Booking> result;
         switch (state) {
             case CURRENT:
-                result = repository.findAllByItem_Owner_IdAndStartBeforeAndEndAfter(userId, now, now);
+                result = repository.findAllByItem_Owner_IdAndStartBeforeAndEndAfter(userId, now, now, pageRequest);
                 break;
             case PAST:
-                result = repository.findAllByItem_Owner_IdAndEndLessThanEqualOrderByStartDesc(userId, now);
+                result = repository.findAllByItem_Owner_IdAndEndLessThanEqualOrderByStartDesc(userId, now, pageRequest);
                 break;
             case FUTURE:
-                result = repository.findAllByItem_Owner_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now);
+                result = repository.findAllByItem_Owner_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now, pageRequest);
                 break;
             case WAITING:
-                result = repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.WAITING);
+                result = repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.WAITING, pageRequest);
                 break;
             case REJECTED:
-                result = repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.REJECTED);
+                result = repository.findAllByItem_Owner_IdAndStatusIs(userId, BookingStatus.REJECTED, pageRequest);
                 break;
             default:
-                result = repository.findAllByItem_Owner_IdOrderByEndDesc(userId);
+                result = repository.findAllByItem_Owner_IdOrderByEndDesc(userId, pageRequest);
                 break;
         }
         return result.stream().map(mapper::toDto).collect(Collectors.toList());
     }
 
-    public List<BookingDto> getBookingsByBookerAndState(State state, Long userId) {
+    public List<BookingDto> getBookingsByBookerAndState(State state, Long userId, Integer from, Integer size) {
         userService.get(userId);
         var now = LocalDateTime.now();
-        List<Booking> result;
+        var pageRequest = PageRequest.of(from / size, size);
+        Page<Booking> result;
         switch (state) {
             case CURRENT:
-                result =  repository.findAllByBooker_IdAndStartBeforeAndEndAfter(userId, now, now);
+                result =  repository.findAllByBooker_IdAndStartBeforeAndEndAfter(userId, now, now, pageRequest);
                 break;
             case PAST:
-                result =  repository.findAllByBooker_IdAndEndLessThanEqualOrderByStartDesc(userId, now);
+                result =  repository.findAllByBooker_IdAndEndLessThanEqualOrderByStartDesc(userId, now, pageRequest);
                 break;
             case FUTURE:
-                result =  repository.findAllByBooker_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now);
+                result =  repository.findAllByBooker_IdAndStartGreaterThanEqualOrderByStartDesc(userId, now, pageRequest);
                 break;
             case WAITING:
-                result =  repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.WAITING);
+                result =  repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.WAITING, pageRequest);
                 break;
             case REJECTED:
-                result =  repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.REJECTED);
+                result =  repository.findAllByBooker_IdAndStatusIs(userId, BookingStatus.REJECTED, pageRequest);
                 break;
             default:
-                result =  repository.findAllByBooker_IdOrderByEndDesc(userId);
+                result =  repository.findAllByBooker_IdOrderByEndDesc(userId, pageRequest);
                 break;
         }
         return result.stream().map(mapper::toDto).collect(Collectors.toList());

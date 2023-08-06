@@ -5,6 +5,7 @@ import ru.practicum.shareit.booking.dto.BookingInfoDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.ArrayList;
@@ -16,7 +17,8 @@ public class ItemMapper {
                 item.getId(),
                 item.getName(),
                 item.getDescription(),
-                item.getAvailable());
+                item.getAvailable(),
+                item.getRequest() != null ? item.getRequest().getId() : null);
     }
 
     public ItemDtoWithBooking toDtoWithBookings(BookingInfoDto current, BookingInfoDto next, BookingInfoDto last, Item item) {
@@ -31,13 +33,13 @@ public class ItemMapper {
                 new ArrayList<>());
     }
 
-    public Item toItem(User user, ItemDto item) {
+    public Item toItem(User user, ItemDto item, ItemRequest request) {
         return new Item(
                 item.getId(),
                 item.getName(),
                 item.getDescription(),
                 item.getAvailable(),
                 user,
-                null);
+                request);
     }
 }
