@@ -1,14 +1,14 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.base.exception.ValidationException;
-import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.groups.Create;
+import ru.practicum.shareit.groups.Update;
+import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,37 +18,28 @@ public class UserController {
     private final UserService service;
 
     @GetMapping("{id}")
-    public User get(@PathVariable long id) {
-        return service.get(id);
+    public UserDto get(@PathVariable Long id) {
+        return service.getDto(id);
     }
 
     @GetMapping
-    public List<User> getAll() {
+    public List<UserDto> getAll() {
         return service.getAll();
     }
 
     @DeleteMapping("{id}")
-    public void delete(@PathVariable long id) {
+    public void delete(@PathVariable Long id) {
         service.remove(id);
     }
 
     @PostMapping
-    public User create(@RequestBody User object) {
-        return service.create(object);
+    public UserDto create(@Validated(Create.class) @RequestBody UserDto user) {
+        return service.create(user);
     }
 
     @PatchMapping("{id}")
-    public User change(@RequestBody User object, @PathVariable long id) {
-        object.setId(id);
-        return service.patch(object);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(
-            value = HttpStatus.BAD_REQUEST,
-            reason = "Данные не корректны"
-    )
-    public Map<String, String> handleWrongData(final ValidationException e) {
-        return Map.of("error", e.getMessage());
+    public UserDto change(@Validated(Update.class) @RequestBody UserDto user, @PathVariable Long id) {
+        user.setId(id);
+        return service.patch(user);
     }
 }

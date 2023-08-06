@@ -1,74 +1,54 @@
 package ru.practicum.shareit.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import ru.practicum.shareit.base.exception.EmailConflictException;
-import ru.practicum.shareit.base.exception.NotFoundException;
-import ru.practicum.shareit.base.exception.ValidationException;
+import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.user.UserMapper;
+import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.repository.InMemoryUserRepository;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
-@org.springframework.stereotype.Service
+@Service
 @RequiredArgsConstructor
 public class UserService {
 
-    private final InMemoryUserRepository repository;
+    private final UserRepository repository;
+    private final UserMapper mapper;
 
-    public User change(User original, User object) {
-        if (object.getName() == null) {
-            object.setName(original.getName());
+    public User get(Long id) {
+        return repository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким id не найден"));
+    }
+
+    public UserDto getDto(Long id) {
+        return mapper.toDto(repository.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с таким id не найден")));
+    }
+
+    public List<UserDto> getAll() {
+        return repository.findAll().stream().map(mapper::toDto).collect(Collectors.toList());
+    }
+
+    public void remove(Long id) {
+        repository.delete(get(id));
+    }
+
+    public UserDto create(UserDto dto) {
+        var user = mapper.toUser(dto);
+        return mapper.toDto(repository.save(user));
+    }
+
+    public UserDto patch(UserDto dto) {
+        var user = get(dto.getId());
+
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            user.setName(dto.getName());
         }
-        if (object.getEmail() == null) {
-            object.setEmail(original.getEmail());
+        if (dto.getEmail() != null && !user.getEmail().isBlank()) {
+            user.setEmail(dto.getEmail());
         }
-        return object;
-    }
 
-    private void validateUser(User user) {
-        String email = user.getEmail();
-        var userWithSameEmail = repository.getAll().stream().filter(x -> x.getEmail().equals(email)).findFirst();
-        if (user.getEmail() == null) {
-            throw new ValidationException("Email не задан");
-        } else if (user.getEmail().isBlank()) {
-            throw new ValidationException("Электронная почта не может быть пустой");
-        }  else if (!user.getEmail().contains("@")) {
-            throw new ValidationException("Электронная почта должна содержать символ @");
-        }  else if (userWithSameEmail.isPresent()) {
-            if (!Objects.equals(userWithSameEmail.get().getId(), user.getId())) {
-                throw new EmailConflictException();
-            }
-        }
-    }
-
-    public User get(@PathVariable long id) {
-        var object = repository.find(id);
-        if (object.isEmpty()) {
-            throw new NotFoundException(id, object.getClass().getSimpleName());
-        }
-        return object.get();
-    }
-
-    public List<User> getAll() {
-        return repository.getAll();
-    }
-
-    public void remove(long id) {
-        repository.remove(id);
-    }
-
-    public User create(@RequestBody User object) {
-        validateUser(object);
-        return repository.add(object);
-    }
-
-    public User patch(@RequestBody User object) {
-        var original = get(object.getId());
-        object = change(original, object);
-        validateUser(object);
-        return repository.change(object);
+        return mapper.toDto(repository.save(user));
     }
 }

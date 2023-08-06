@@ -1,133 +1,230 @@
 package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
-import ru.practicum.shareit.base.exception.NotFoundException;
-import ru.practicum.shareit.base.exception.ValidationException;
+import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.BookingMapper;
+import ru.practicum.shareit.booking.dto.BookingInfoDto;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.CommentInputDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
+import ru.practicum.shareit.item.mapper.CommentMapper;
+import ru.practicum.shareit.item.mapper.ItemMapper;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.InMemoryItemRepository;
+import ru.practicum.shareit.item.repository.CommentRepository;
+import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.service.UserService;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
-@org.springframework.stereotype.Service
+@Service
 @RequiredArgsConstructor
 public class ItemService {
 
-    private final InMemoryItemRepository repository;
+    private final ItemRepository itemRepository;
+    private final CommentRepository commentRepository;
+    private final BookingRepository bookingRepository;
     private final UserService userService;
+    private final BookingMapper bookingMapper;
+    private final ItemMapper itemMapper;
+    private final CommentMapper commentMapper;
 
-    public Item change(Item original, Item object) {
-        if (object.getName() == null) {
-            object.setName(original.getName());
-        }
-        if (object.getDescription() == null) {
-            object.setDescription(original.getDescription());
-        }
-        if (object.getAvailable() == null) {
-            object.setAvailable(original.getAvailable());
-        }
-        if (object.getOwner() == null) {
-            object.setOwner(original.getOwner());
-        }
-        if (object.getRequest() == null) {
-            object.setRequest(original.getRequest());
-        }
-        return object;
+    public Item get(Long id) {
+        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Предмет с таким id не существует"));
     }
 
-    private void validateItem(Item item) {
-        if (item.getName() == null) {
-            throw new ValidationException("Имя не задано");
-        } else if (item.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым");
-        } else if (item.getDescription() == null) {
-            throw new ValidationException("Описание не задано");
-        } else if (item.getDescription().isBlank()) {
-            throw new ValidationException("Описание не может быть пустым");
-        } else if (item.getAvailable() == null) {
-            throw new ValidationException("Статус не может быть пустым");
+    public ItemDtoWithBooking getWithBookings(Long id, Long userId) {
+        var item = get(id);
+        BookingInfoDto current = null;
+        BookingInfoDto next = null;
+        BookingInfoDto last = null;
+        if (item.getOwner().getId().equals(userId)) {
+            var currentData = bookingRepository.findCurrentByItem(item.getId());
+            if (currentData != null) {
+                current = bookingMapper.toInfo(currentData);
+            }
+
+            var bookings = bookingRepository.findNextByItem(item.getId());
+            if (bookings.size() != 0) {
+                next = bookingMapper.toInfo(bookings.get(0));
+            }
+
+            bookings = bookingRepository.findLastByItem(item.getId());
+            if (bookings.size() != 0) {
+                last = bookingMapper.toInfo(bookings.get(0));
+            }
         }
+        var dto = itemMapper.toDtoWithBookings(current, next, last, item);
+        var comments = commentRepository.findAllByItem_Id(item.getId());
+        var commentsDto = dto.getComments();
+        for (Comment comment : comments) {
+            commentsDto.add(comment.toDto());
+        }
+
+        dto.setComments(commentsDto);
+
+        return dto;
     }
 
-    public Item get(@PathVariable long id) {
-        var object = repository.find(id);
-        if (object.isEmpty()) {
-            throw new NotFoundException(id, object.getClass().getSimpleName());
+    public List<ItemDtoWithBooking> getAllWithBookings(Long userId) {
+        userService.get(userId);
+        var items = itemRepository.findAllByOwner_IdOrderById(userId);
+        var result = new ArrayList<ItemDtoWithBooking>();
+
+        var comments = commentRepository.findByItemIn(items)
+                .stream()
+                .collect(groupingBy(Comment::getItem, toList()));
+
+        var currents = bookingRepository.findCurrentsByUser(userId)
+                .stream()
+                .collect(groupingBy(Booking::getItem, toList()));
+
+        var lasts = bookingRepository.findLastsByUser(userId)
+                .stream()
+                .collect(groupingBy(Booking::getItem, toList()));
+
+        var nexts = bookingRepository.findNextsByUser(userId)
+                .stream()
+                .collect(groupingBy(Booking::getItem, toList()));
+
+        for (Item item : items) {
+            var currentsByItem = currents.get(item);
+            BookingInfoDto currentDto = null;
+            if (currentsByItem != null) {
+                var current = currentsByItem.stream().findFirst().orElse(null);
+                if (current != null) {
+                    currentDto = bookingMapper.toInfo(current);
+                }
+            }
+
+            var nextsByItem = nexts.get(item);
+            BookingInfoDto nextDto = null;
+            if (nextsByItem != null) {
+                var next = nextsByItem.stream().findFirst().orElse(null);
+                if (next != null) {
+                    nextDto = bookingMapper.toInfo(next);
+                }
+            }
+
+            var lastsByItem = lasts.get(item);
+            BookingInfoDto lastDto = null;
+            if (lastsByItem != null) {
+                var last = lastsByItem.stream().findFirst().orElse(null);
+                if (last != null) {
+                    lastDto = bookingMapper.toInfo(last);
+                }
+            }
+
+            var dto = itemMapper.toDtoWithBookings(currentDto, nextDto, lastDto, item);
+            var commentsByItem = comments.get(item);
+            if (commentsByItem != null) {
+                dto.setComments(comments.get(item).stream().map(commentMapper::toDto).collect(Collectors.toList()));
+            }
+
+            result.add(dto);
         }
-        return object.get();
+
+        return result;
     }
 
     public List<Item> getAll() {
-        return repository.getAll();
+        return itemRepository.findAll();
     }
 
-    public void remove(long id) {
-        repository.remove(id);
+    public void remove(Long id) {
+        itemRepository.delete(get(id));
     }
 
-    public Item create(ItemDto object, long userId) {
+    public ItemDto create(ItemDto dto, Long userId) {
+        var item = itemMapper.toItem(null, dto);
         var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
-        }
-        var item = object.toItem(user);
-        validateItem(item);
-        return repository.add(item);
+        item.setOwner(user);
+        return itemMapper.toDto(itemRepository.save(item));
     }
 
-    public Item patch(Item item, long id, long userId) {
+    public CommentDto createComment(CommentInputDto dto, Long itemId, Long userId) {
         var user = userService.get(userId);
-        if (user == null) {
-            throw new NotFoundException(userId, "Пользователь с таким id не существует");
-        }
-        var original = get(id);
-        if (original == null) {
-            throw new NotFoundException(id, "Предмет с таким id не существует");
-        }
-        if (userId != original.getOwner().getId()) {
-            throw new NotFoundException(userId, "Пользователь не является владельцем");
-        }
-        item.setId(id);
-        item = change(original, item);
-        validateItem(item);
-        return repository.change(item);
-    }
+        var item = get(itemId);
 
-    public List<ItemDto> getAll(Long userId) {
-        var items = getAll();
-        var result = new ArrayList<ItemDto>();
-        for (Item item: items) {
-            if (item.getOwner().getId().equals(userId)) {
-                result.add(item.toDto());
+        var bookings = bookingRepository.findAllByItemAndUser(itemId, userId);
+        if (bookings.size() == 0) {
+            throw new ValidationException("У предмета не было бронирований");
+        }
+
+        Booking oldestBooking = null;
+        for (Booking booking: bookings) {
+            if (!booking.getStatus().equals(BookingStatus.REJECTED)) {
+                oldestBooking = booking;
+                break;
             }
         }
-        return result;
+
+        if (oldestBooking == null) {
+            throw new ValidationException("У вас не было бронирований с этим предметом");
+        }
+
+        var now = LocalDateTime.now();
+
+        if (oldestBooking.getEnd().isAfter(now)) {
+            throw new ValidationException("У вас нет завершенных бронирований с этим предметом");
+        }
+
+        var comment = commentMapper.toComment(dto, -1L, item, user, now);
+        return commentMapper.toDto(commentRepository.save(comment));
+    }
+
+    public ItemDto patch(ItemDto dto, Long id, Long userId) {
+        userService.get(userId);
+        var item = get(id);
+
+        if (!userId.equals(item.getOwner().getId())) {
+            throw new NotFoundException("Пользователь не является владельцем");
+        }
+
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            item.setName(dto.getName());
+        }
+        if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
+            item.setDescription(dto.getDescription());
+        }
+        if (dto.getAvailable() != null) {
+            item.setAvailable(dto.getAvailable());
+        }
+
+        return itemMapper.toDto(itemRepository.save(item));
     }
 
     public List<ItemDto> search(String text) {
         text = text.toLowerCase();
-        var items = getAll();
-        var result = new ArrayList<ItemDto>();
-        var pattern = Pattern.compile(text);
-        for (var item : items) {
-            if (item.getAvailable()) {
-                var matcher = pattern.matcher(item.getName().toLowerCase());
-                if (matcher.find()) {
-                    result.add(item.toDto());
-                    continue;
-                }
-                matcher = pattern.matcher(item.getDescription().toLowerCase());
-                if (matcher.find()) {
-                    result.add(item.toDto());
-                }
-            }
-        }
-
-        return result;
+//        var items = getAll();
+//        var result = new ArrayList<ItemDto>();
+//        var pattern = Pattern.compile(text);
+//        for (var item : items) {
+//            if (item.getAvailable()) {
+//                var matcher = pattern.matcher(item.getName().toLowerCase());
+//                var dto = itemMapper.toDto(item);
+//                if (matcher.find()) {
+//                    result.add(dto);
+//                    continue;
+//                }
+//                matcher = pattern.matcher(item.getDescription().toLowerCase());
+//                if (matcher.find()) {
+//                    result.add(dto);
+//                }
+//            }
+//        }
+        return itemRepository.findByText(text).stream().map(itemMapper::toDto).collect(Collectors.toList());
     }
 }

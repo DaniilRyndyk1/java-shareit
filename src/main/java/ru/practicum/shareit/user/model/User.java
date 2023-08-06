@@ -1,14 +1,19 @@
 package ru.practicum.shareit.user.model;
 
-import lombok.Data;
-import ru.practicum.shareit.base.Model;
+import lombok.*;
 
-@Data
-public class User extends Model {
+import javax.persistence.*;
+
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
     private String email;
-
-    public User(String name, String email) {
-        this.setName(name);
-        this.setEmail(email);
-    }
 }

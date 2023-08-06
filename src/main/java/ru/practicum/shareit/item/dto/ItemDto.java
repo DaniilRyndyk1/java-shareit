@@ -1,30 +1,23 @@
 package ru.practicum.shareit.item.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.practicum.shareit.base.Model;
-import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.groups.Create;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 @Data
-public class ItemDto extends Model {
+@AllArgsConstructor
+public class ItemDto {
+    private Long id;
+    @NotBlank(groups = {Create.class})
+    @Size(max = 255)
+    private String name;
+    @NotBlank(groups = {Create.class})
+    @Size(max = 512)
     private String description;
+    @NotNull(groups = {Create.class})
     private Boolean available;
-
-    public ItemDto(String name, String description, Boolean available) {
-        this.setName(name);
-        this.setDescription(description);
-        this.setAvailable(available);
-    }
-
-    public Item toItem(User user) {
-        Item item = new Item(
-                this.getName(),
-                this.getDescription(),
-                this.getAvailable(),
-                user,
-                null
-        );
-        item.setId(getId());
-        return item;
-    }
 }
