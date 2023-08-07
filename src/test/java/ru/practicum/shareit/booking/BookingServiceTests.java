@@ -94,9 +94,10 @@ public class BookingServiceTests {
         var ownerDto = userService.create(userDto1);
         var newItemDto = itemService.create(itemDto, ownerDto.getId());
         var anotherUserDto = userService.create(userDto2);
+        var time = LocalDateTime.now().plusHours(4);
         var inputDto = new BookingInputDto(
-                LocalDateTime.now().plusHours(4),
-                LocalDateTime.now().plusHours(4),
+                time,
+                time,
                 newItemDto.getId());
         assertThrows(ValidationException.class,
                 () -> bookingService.create(inputDto, anotherUserDto.getId()));

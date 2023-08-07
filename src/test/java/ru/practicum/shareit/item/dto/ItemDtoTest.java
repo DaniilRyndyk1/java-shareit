@@ -45,7 +45,7 @@ public class ItemDtoTest {
         itemDto.setName(null);
         Set<ConstraintViolation<ItemDto>> violations = validator.validate(itemDto, Create.class);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно быть пустым'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be blank'");
     }
 
     @Test
@@ -53,7 +53,7 @@ public class ItemDtoTest {
         itemDto.setName("");
         Set<ConstraintViolation<ItemDto>> violations = validator.validate(itemDto, Create.class);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно быть пустым'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be blank'");
     }
 
     @Test
@@ -61,7 +61,7 @@ public class ItemDtoTest {
         itemDto.setDescription(null);
         Set<ConstraintViolation<ItemDto>> violations = validator.validate(itemDto, Create.class);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно быть пустым'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be blank'");
     }
 
     @Test
@@ -70,7 +70,7 @@ public class ItemDtoTest {
         Set<ConstraintViolation<ItemDto>> violations = validator.validate(itemDto, Create.class);
         System.out.println(violations);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно быть пустым");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be blank'");
     }
 
     @Test
@@ -78,6 +78,6 @@ public class ItemDtoTest {
         itemDto.setAvailable(null);
         Set<ConstraintViolation<ItemDto>> violations = validator.validate(itemDto, Create.class);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно равняться null'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be null'");
     }
 }

@@ -41,7 +41,7 @@ public class CommentInputDtoTest {
         commentDto.setText(null);
         Set<ConstraintViolation<CommentInputDto>> violations = validator.validate(commentDto);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно быть пустым'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be blank'");
     }
 
     @Test
@@ -49,6 +49,6 @@ public class CommentInputDtoTest {
         commentDto.setText("");
         Set<ConstraintViolation<CommentInputDto>> violations = validator.validate(commentDto);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно быть пустым'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be blank'");
     }
 }

@@ -49,7 +49,7 @@ public class BookingInputDtoTest {
         bookingInputDto.setItemId(null);
         Set<ConstraintViolation<BookingInputDto>> violations = validator.validate(bookingInputDto);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно равняться null'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be null'");
     }
 
     @Test
@@ -57,7 +57,7 @@ public class BookingInputDtoTest {
         bookingInputDto.setStart(null);
         Set<ConstraintViolation<BookingInputDto>> violations = validator.validate(bookingInputDto);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно равняться null'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be null'");
     }
 
     @Test
@@ -65,7 +65,7 @@ public class BookingInputDtoTest {
         bookingInputDto.setEnd(null);
         Set<ConstraintViolation<BookingInputDto>> violations = validator.validate(bookingInputDto);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='не должно равняться null'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must not be null'");
     }
 
     @Test
@@ -74,8 +74,7 @@ public class BookingInputDtoTest {
         Set<ConstraintViolation<BookingInputDto>> violations = validator.validate(bookingInputDto);
         System.out.println(violations);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='должно содержать сегодняшнее " +
-                "число или дату, которая еще не наступила");
+        assertThat(violations.toString()).contains("interpolatedMessage='must be a date in the present or in the future'");
     }
 
     @Test
@@ -83,7 +82,6 @@ public class BookingInputDtoTest {
         bookingInputDto.setEnd(LocalDateTime.now().minusSeconds(1));
         Set<ConstraintViolation<BookingInputDto>> violations = validator.validate(bookingInputDto);
         assertThat(violations).isNotEmpty();
-        assertThat(violations.toString()).contains("interpolatedMessage='должно содержать дату, " +
-                "которая еще не наступила'");
+        assertThat(violations.toString()).contains("interpolatedMessage='must be a future date'");
     }
 }
