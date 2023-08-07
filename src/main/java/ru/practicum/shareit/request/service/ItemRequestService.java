@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.ItemRequestInputDto;
 import ru.practicum.shareit.request.mapper.ItemRequestMapper;
@@ -44,6 +45,9 @@ public class ItemRequestService {
     }
 
     public List<ItemRequestDto> getAllByPage(int from, int size, Long userId) {
+        if (size <= 0 || from < 0) {
+            throw new ValidationException("Переданы неверные параметры");
+        }
         userService.get(userId);
         return repository.findAllByRequestor_idNotOrderByCreatedDesc(userId, PageRequest.of(from / size, size)).stream().map(mapper::toDto).collect(Collectors.toList());
     }

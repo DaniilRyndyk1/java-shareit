@@ -20,13 +20,13 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.request.mapper.ItemRequestMapper;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.service.ItemRequestService;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,6 +84,9 @@ public class ItemService {
     }
 
     public List<ItemDtoWithBooking> getAllWithBookings(Integer from, Integer size, Long userId) {
+        if (size <= 0 || from < 0) {
+            throw new ValidationException("Переданы неверные параметры");
+        }
         userService.get(userId);
         var items = itemRepository.findAllByOwner_IdOrderById(userId, PageRequest.of(from / size, size));
         var result = new ArrayList<ItemDtoWithBooking>();
@@ -213,6 +216,12 @@ public class ItemService {
     }
 
     public List<ItemDto> search(String text, Integer from, Integer size) {
+        if (size <= 0 || from < 0) {
+            throw new ValidationException("Переданы неверные параметры");
+        }
+        if (text.isBlank()) {
+            return Collections.emptyList();
+        }
         text = text.toLowerCase();
         return itemRepository.findByText(text, PageRequest.of(from / size, size)).stream().map(itemMapper::toDto).collect(Collectors.toList());
     }

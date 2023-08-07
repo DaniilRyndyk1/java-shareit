@@ -1,6 +1,6 @@
 package ru.practicum.shareit.exception;
 
-import ru.practicum.shareit.booking.State;
+import ru.practicum.shareit.booking.enums.State;
 
 public class UnsupportedStateException extends RuntimeException {
     public UnsupportedStateException(State state) {

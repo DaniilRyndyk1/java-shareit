@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
-import ru.practicum.shareit.booking.State;
+import ru.practicum.shareit.booking.enums.State;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
@@ -75,6 +75,9 @@ public class BookingService {
     }
 
     public List<BookingDto> getBookingsByOwnerAndState(State state, Long userId, Integer from, Integer size) {
+        if (size <= 0 || from < 0) {
+            throw new ValidationException("Переданы неверные параметры");
+        }
         userService.get(userId);
         var now = LocalDateTime.now();
         var pageRequest = PageRequest.of(from / size, size);
@@ -103,6 +106,9 @@ public class BookingService {
     }
 
     public List<BookingDto> getBookingsByBookerAndState(State state, Long userId, Integer from, Integer size) {
+        if (size <= 0 || from < 0) {
+            throw new ValidationException("Переданы неверные параметры");
+        }
         userService.get(userId);
         var now = LocalDateTime.now();
         var pageRequest = PageRequest.of(from / size, size);

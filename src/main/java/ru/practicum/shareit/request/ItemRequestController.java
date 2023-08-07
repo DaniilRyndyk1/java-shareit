@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.Config;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.groups.Create;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.ItemRequestInputDto;
@@ -30,9 +29,6 @@ public class ItemRequestController {
 
     @GetMapping("all")
     public List<ItemRequestDto> getByParams(@RequestParam(defaultValue = "0") Integer from, @RequestParam(defaultValue = "1") Integer size, @RequestHeader(Config.userHeaderName) Long userId) {
-        if (size <= 0 || from < 0) {
-            throw new ValidationException("Переданы неверные параметры");
-        }
         return service.getAllByPage(from, size, userId);
     }
 

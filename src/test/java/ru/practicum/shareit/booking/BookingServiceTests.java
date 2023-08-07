@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
+import ru.practicum.shareit.booking.enums.State;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -25,6 +26,7 @@ public class BookingServiceTests {
     private final ItemService itemService;
     private final UserDto userDto1 = new UserDto(1L,"Danila","konosuba@gmail.com");
     private final UserDto userDto2 = new UserDto(2L,"Danila2","konosuba2@gmail.com");
+    private final UserDto userDto3 = new UserDto(2L,"Danila3","konosuba3@gmail.com");
     private final ItemDto itemDto = new ItemDto(1L, "Sword", "Very very heavy", true, null);
 
     @Test
@@ -114,7 +116,7 @@ public class BookingServiceTests {
     }
 
     @Test
-    void shouldNotCreateBookingWithEndEqualEnd() {
+    void shouldNotCreateBookingWithEndEqualNull() {
         var ownerDto = userService.create(userDto1);
         var newItemDto = itemService.create(itemDto, ownerDto.getId());
         var anotherUserDto = userService.create(userDto2);
@@ -144,8 +146,8 @@ public class BookingServiceTests {
         var ownerDto = userService.create(userDto1);
         var newItemDto = itemService.create(itemDto, ownerDto.getId());
         var bookingInputDto = new BookingInputDto(
-                LocalDateTime.now().plusHours(1),
-                LocalDateTime.now().plusHours(2),
+                LocalDateTime.now().plusHours(6),
+                LocalDateTime.now().plusHours(7),
                 newItemDto.getId());
         var exception = assertThrows(NotFoundException.class,
                 () -> bookingService.create(bookingInputDto, ownerDto.getId()));
@@ -155,6 +157,75 @@ public class BookingServiceTests {
     @Test
     void shouldNotGetAllBookingsWithWrongUserId() {
         assertThrows(NotFoundException.class,
+                () -> bookingService.getBookingsByBookerAndState(State.CURRENT, 999L, 1, 1));
+    }
+
+    @Test
+    void shouldNotGetAllBookingsWithWrongOwnerId() {
+        assertThrows(NotFoundException.class,
                 () -> bookingService.getBookingsByOwnerAndState(State.CURRENT, 999L, 1, 1));
+    }
+
+    @Test
+    void shouldNotGetAllBookingsWithWrongState() {
+        var user = userService.create(userDto1);
+
+        assertThrows(NullPointerException.class,
+                () -> bookingService.getBookingsByOwnerAndState(null, user.getId(), 1, 1));
+    }
+
+    @Test
+    void shouldNotGetBookingWithWrongId() {
+        var user = userService.create(userDto1);
+
+        assertThrows(NotFoundException.class,
+                () -> bookingService.get(999L, user.getId()));
+    }
+
+    @Test
+    void shouldNotApproveBookingByOtherUser() {
+        var user1 = userService.create(userDto1);
+        var item1 = itemService.create(itemDto, user1.getId());
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(8),
+                LocalDateTime.now().plusHours(9),
+                item1.getId());
+        var user2 = userService.create(userDto2);
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        var user3 = userService.create(userDto3);
+
+        assertThrows(RuntimeException.class,
+                () -> bookingService.approve(booking.getId(), user3.getId(), false));
+    }
+
+    @Test
+    void shouldNotApproveBookingByBooker() {
+        var user1 = userService.create(userDto1);
+        var item1 = itemService.create(itemDto, user1.getId());
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(11),
+                LocalDateTime.now().plusHours(12),
+                item1.getId());
+        var user2 = userService.create(userDto2);
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+
+        assertThrows(NotFoundException.class,
+                () -> bookingService.approve(booking.getId(), user2.getId(), false));
+    }
+
+    @Test
+    void shouldNotApproveBookingAfterApprove() {
+        var user1 = userService.create(userDto1);
+        var item1 = itemService.create(itemDto, user1.getId());
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(10),
+                LocalDateTime.now().plusHours(11),
+                item1.getId());
+        var user2 = userService.create(userDto2);
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        bookingService.approve(booking.getId(), user1.getId(), false);
+
+        assertThrows(ValidationException.class,
+                () -> bookingService.approve(booking.getId(), user1.getId(), true));
     }
 }
