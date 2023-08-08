@@ -93,7 +93,8 @@ public class ItemRequestServiceTests {
     void shouldGetAllItemRequestsByUser() {
         var user = userService.create(new UserDto(-1L, "sdfads", "sdfasfd@ya.ru"));
         var itemRequest = itemRequestService.create(itemRequestDto, user.getId());
-        var requests = itemRequestService.getAllByPage(0, 20, user.getId() - 1);
+        var user2 = userService.create(new UserDto(-1L, "sdfad2s", "sdf2asfd@ya.ru"));
+        var requests = itemRequestService.getAllByPage(0, 20, user2.getId());
         assertEquals(requests.size(), 2);
         var first = requests.get(0);
         assertEquals(first.getId(), itemRequest.getId());
