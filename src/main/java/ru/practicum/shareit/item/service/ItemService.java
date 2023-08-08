@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -136,9 +137,9 @@ public class ItemService {
             }
 
             var dto = itemMapper.toDtoWithBookings(currentDto, nextDto, lastDto, item);
-            var commentsByItem = comments.get(item);
-            if (commentsByItem != null) {
-                dto.setComments(comments.get(item).stream().map(commentMapper::toDto).collect(Collectors.toList()));
+            var commentsByItem = comments.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
+            if (commentsByItem.isPresent()) {
+                dto.setComments((commentsByItem.get().getValue().stream().map(commentMapper::toDto).collect(Collectors.toList())));
             }
 
             result.add(dto);

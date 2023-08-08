@@ -50,4 +50,21 @@ public class UserServiceTests {
         var newUser = userService.get(userDto.getId());
         assertEquals(newUser.getName(), userDto.getName());
     }
+
+    @Test
+    void shouldRemoveUser() {
+        var newUser = userService.create(new UserDto(3L, "Nin", "nin@ya.ru"));
+        var originalSize = userService.getAll().size();
+        userService.remove(newUser.getId());
+        assertEquals(originalSize, userService.getAll().size() + 1);
+    }
+
+    @Test
+    void shouldGetUserDto() {
+        var newUser = userService.create(new UserDto(3L, "Nin2", "nin2@ya.ru"));
+        var dto = userService.getDto(newUser.getId());
+        assertEquals(newUser.getId(), dto.getId());
+        assertEquals(newUser.getName(), dto.getName());
+        assertEquals(newUser.getEmail(), dto.getEmail());
+    }
 }

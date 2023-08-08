@@ -156,5 +156,14 @@ public class ItemControllerTests {
                 .andExpect(jsonPath("$.created",
                         is(commentDto.getCreated().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))));
     }
+
+    @Test
+    void remove() throws Exception {
+        mvc.perform(delete("/items/1")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
 }
 

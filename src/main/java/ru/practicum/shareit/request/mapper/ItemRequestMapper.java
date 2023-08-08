@@ -34,13 +34,4 @@ public class ItemRequestMapper {
                 created,
                 items);
     }
-
-    public ItemRequest toRequest(ItemRequestDto dto, User requestor, Set<Item> items) {
-        return new ItemRequest(
-                dto.getId(),
-                dto.getDescription(),
-                requestor,
-                dto.getCreated(),
-                items);
-    }
 }

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -17,8 +17,9 @@ import ru.practicum.shareit.user.service.UserService;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class ItemRequestTests {
+public class ItemRequestServiceTests {
     private final ItemRequestService itemRequestService;
     private final ItemService itemService;
     private final UserService userService;
@@ -42,7 +43,7 @@ public class ItemRequestTests {
 
     @Test
     void shouldNotCreateNullItemRequest() {
-        assertThrows(DataIntegrityViolationException.class,
+        assertThrows(NotFoundException.class,
                 () -> itemRequestService.create(new ItemRequestInputDto(), 1L));
     }
 
@@ -85,5 +86,18 @@ public class ItemRequestTests {
     void shouldGetEmptyListWithFrom0AndNegativeSize() {
         var user = userService.create(user1Dto);
         assertEquals(0, itemRequestService.getAllByUser(user.getId()).size());
+    }
+
+    @Test
+    void shouldGetAllItemRequestsByUser() {
+        var user = userService.create(user2Dto);
+        var itemRequest = itemRequestService.create(itemRequestDto, user.getId());
+        var requests = itemRequestService.getAllByPage(0, 20, user.getId());
+        assertEquals(requests.size(), 1);
+        var first = requests.get(0);
+        assertEquals(first.getId(), itemRequest.getId());
+        assertEquals(first.getDescription(), itemRequest.getDescription());
+        assertEquals(first.getCreated(), itemRequest.getCreated());
+        assertEquals(first.getItems().size(), itemRequest.getItems().size());
     }
 }

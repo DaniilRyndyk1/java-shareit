@@ -7,7 +7,6 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.booking.enums.State;
 import ru.practicum.shareit.booking.service.BookingService;
-import ru.practicum.shareit.exception.ValidationException;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -40,9 +39,6 @@ public class BookingController {
 
     @GetMapping("owner")
     public List<BookingDto> getItemsBookings(@RequestParam(defaultValue = "0") Integer from, @RequestParam(defaultValue = "10") Integer size, @RequestParam(defaultValue = "ALL") State state, @RequestHeader(Config.userHeaderName) Long userId) {
-        if (size <= 0 || from < 0) {
-            throw new ValidationException("Переданы неверные параметры");
-        }
         return service.getBookingsByOwnerAndState(state, userId, from, size);
     }
 }
