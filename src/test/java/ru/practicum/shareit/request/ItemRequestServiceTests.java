@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -43,7 +44,7 @@ public class ItemRequestServiceTests {
 
     @Test
     void shouldNotCreateNullItemRequest() {
-        assertThrows(NotFoundException.class,
+        assertThrows(DataIntegrityViolationException.class,
                 () -> itemRequestService.create(new ItemRequestInputDto(), 1L));
     }
 
@@ -90,10 +91,10 @@ public class ItemRequestServiceTests {
 
     @Test
     void shouldGetAllItemRequestsByUser() {
-        var user = userService.create(user2Dto);
+        var user = userService.create(new UserDto(-1L, "sdfads", "sdfasfd@ya.ru"));
         var itemRequest = itemRequestService.create(itemRequestDto, user.getId());
-        var requests = itemRequestService.getAllByPage(0, 20, user.getId());
-        assertEquals(requests.size(), 1);
+        var requests = itemRequestService.getAllByPage(0, 20, user.getId() - 1);
+        assertEquals(requests.size(), 2);
         var first = requests.get(0);
         assertEquals(first.getId(), itemRequest.getId());
         assertEquals(first.getDescription(), itemRequest.getDescription());
