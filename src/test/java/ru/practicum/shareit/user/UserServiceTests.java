@@ -53,7 +53,7 @@ public class UserServiceTests {
 
     @Test
     void shouldRemoveUser() {
-        var newUser = userService.create(new UserDto(3L, "Nin", "nin@ya.ru"));
+        var newUser = userService.create(new UserDto(-1L, "Nin", "nin@ya.ru"));
         var originalSize = userService.getAll().size();
         userService.remove(newUser.getId());
         assertEquals(originalSize, userService.getAll().size() + 1);
