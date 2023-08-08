@@ -139,8 +139,6 @@ public class BookingService {
     private void validateBooking(Booking booking) {
         if (!booking.getItem().getAvailable()) {
             throw new ValidationException("Предмет недоступен");
-        } else if (booking.getBooker() == null) {
-            throw new ValidationException("Пользователь не задан");
         } else if (booking.getEnd().isBefore(booking.getStart())) {
             throw new ValidationException("Конец бронирования не может быть раньше начала");
         } else if (booking.getEnd().isEqual(booking.getStart())) {

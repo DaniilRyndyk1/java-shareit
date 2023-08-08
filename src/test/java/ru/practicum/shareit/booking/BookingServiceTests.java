@@ -217,7 +217,7 @@ public class BookingServiceTests {
     @Test
     void shouldNotApproveBookingAfterApprove() {
         var user1 = userService.create(userDto1);
-        var item1 = itemService.create(itemDto, user1.getId());
+        var item1 = itemService.create(new ItemDto(-1L, "test12", "test12", true, null), user1.getId());
         var bookingInputDto = new BookingInputDto(
                 LocalDateTime.now().plusHours(10),
                 LocalDateTime.now().plusHours(11),
@@ -228,5 +228,294 @@ public class BookingServiceTests {
 
         assertThrows(ValidationException.class,
                 () -> bookingService.approve(booking.getId(), user1.getId(), true));
+    }
+
+    @Test
+    void shouldNotApproveBookingByNotOwner() {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "test11", "test11", true, null), user1.getId());
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(10),
+                LocalDateTime.now().plusHours(11),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab34@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        var user3 = userService.create(new UserDto(-1L, "aababab", "ababab4@hmmsl.ru"));
+
+        assertThrows(RuntimeException.class,
+                () -> bookingService.approve(booking.getId(), user3.getId(), false));
+    }
+
+    @Test
+    void shouldNotGetBookingByNotOwner() {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab6@hmmsl.ru"));
+        var item1 = itemService.create(itemDto, user1.getId());
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(10),
+                LocalDateTime.now().plusHours(11),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab374@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        var user3 = userService.create(new UserDto(-1L, "aababab", "ababab48@hmmsl.ru"));
+
+        assertThrows(NotFoundException.class,
+                () -> bookingService.get(booking.getId(), user3.getId()));
+    }
+
+    @Test
+    void shouldNotGetAllBookingsByOwnerWithWrongParams() {
+        var user = userService.create(new UserDto(-1L, "aababab", "abababs6@hmmsl.ru"));
+        assertThrows(ValidationException.class,
+                () -> bookingService.getBookingsByOwnerAndState(State.CURRENT, user.getId(), 0, -1));
+    }
+
+    @Test
+    void shouldGetBookingByOwnerWithStateCurrent() throws InterruptedException {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab_1@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "test3", "test3", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusSeconds(1),
+                LocalDateTime.now().plusHours(100),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab_2@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        Thread.sleep(1500);
+        var items = bookingService.getBookingsByOwnerAndState(State.CURRENT, user1.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByOwnerWithStatePast() throws InterruptedException {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab_3@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "test1", "test1", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusSeconds(1),
+                LocalDateTime.now().plusSeconds(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab_4@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        Thread.sleep(3000);
+        var items = bookingService.getBookingsByOwnerAndState(State.PAST, user1.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByOwnerWithStateFuture() {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab_5@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "test2", "test2", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab_6@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        var items = bookingService.getBookingsByOwnerAndState(State.FUTURE, user1.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByOwnerWithStateWaiting() {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab_5_@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "test23", "test23", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab_6_@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+
+        var items = bookingService.getBookingsByOwnerAndState(State.WAITING, user1.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByOwnerWithStateRejected() {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab_5_1@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "test231", "test231", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab_6_1@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+
+        bookingService.approve(booking.getId(), user1.getId(), false);
+
+        var items = bookingService.getBookingsByOwnerAndState(State.REJECTED, user1.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByOwnerWithStateAll() {
+        var user1 = userService.create(new UserDto(-1L, "aababab", "ababab_5_2@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "test2312", "test2312", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "aababab", "ababab_6_12@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+
+        var items = bookingService.getBookingsByOwnerAndState(State.ALL, user1.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldNotGetAllBookingsByBookerWithWrongParams() {
+        var user = userService.create(new UserDto(-1L, "aababab", "a@hmmsl.ru"));
+        assertThrows(ValidationException.class,
+                () -> bookingService.getBookingsByBookerAndState(State.CURRENT, user.getId(), 0, -1));
+    }
+
+    @Test
+    void shouldGetBookingByBookerWithStateCurrent() throws InterruptedException {
+        var user1 = userService.create(new UserDto(-1L, "b", "b@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "a", "a", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusSeconds(1),
+                LocalDateTime.now().plusHours(100),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "b1", "b1@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        Thread.sleep(1500);
+        var items = bookingService.getBookingsByBookerAndState(State.CURRENT, user2.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByBookerWithStatePast() throws InterruptedException {
+        var user1 = userService.create(new UserDto(-1L, "b3", "b4@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "a2", "a2", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusSeconds(1),
+                LocalDateTime.now().plusSeconds(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "b4adfsdaf", "b4dasfsadf@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        Thread.sleep(3000);
+        var items = bookingService.getBookingsByBookerAndState(State.PAST, user2.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByBookerWithStateFuture() {
+        var user1 = userService.create(new UserDto(-1L, "b5", "b5@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "a3", "test2", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "b6", "b6@mmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        var items = bookingService.getBookingsByBookerAndState(State.FUTURE, user2.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByBookerWithStateWaiting() {
+        var user1 = userService.create(new UserDto(-1L, "b7", "b7@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "a4", "test23", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "b8", "b8@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+
+        var items = bookingService.getBookingsByBookerAndState(State.WAITING, user2.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByBookerWithStateRejected() {
+        var user1 = userService.create(new UserDto(-1L, "b9", "b9@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "a5", "test231", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "b10", "b10@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+
+        bookingService.approve(booking.getId(), user1.getId(), false);
+
+        var items = bookingService.getBookingsByBookerAndState(State.REJECTED, user2.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetBookingByBookerWithStateAll() {
+        var user1 = userService.create(new UserDto(-1L, "b11", "b11@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "a6", "test2312", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "b12", "b12@hmmsl.ru"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+
+        var items = bookingService.getBookingsByBookerAndState(State.ALL, user2.getId(), 0, 20);
+        assertEquals(items.size(), 1);
+        assertEquals(items.get(0).getId(), booking.getId());
+    }
+
+    @Test
+    void shouldNotCreateBookingWithUnavailableItem() {
+        var user1 = userService.create(new UserDto(-1L, "b11", "b111@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "a6", "test23121", false, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "b12", "b121@hmmsl.ru"));
+
+        assertThrows(ValidationException.class,
+                () -> bookingService.create(bookingInputDto, user2.getId()));
+    }
+
+    @Test
+    void shouldNotCreateBookingIfThisTimeIsBusy() {
+        var user1 = userService.create(new UserDto(-1L, "hello1", "hello1@hmmsl.ru"));
+        var item1 = itemService.create(new ItemDto(-1L, "hello1123", "hello1123", true, null), user1.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2),
+                item1.getId());
+        var user2 = userService.create(new UserDto(-1L, "hello2", "hello2@hmmsl.ru"));
+        bookingService.create(bookingInputDto, user2.getId());
+
+        var user3 = userService.create(new UserDto(-1L, "b126", "b1216@hmmsl.ru"));
+        var bookingInputDto2 = new BookingInputDto(
+                LocalDateTime.now().plusHours(1).plusSeconds(1),
+                LocalDateTime.now().plusHours(2).minusSeconds(1),
+                item1.getId());
+
+        assertThrows(NotFoundException.class,
+                () -> bookingService.create(bookingInputDto2, user3.getId()));
     }
 }
