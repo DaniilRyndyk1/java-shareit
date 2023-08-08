@@ -109,31 +109,25 @@ public class ItemService {
                 .collect(groupingBy(Booking::getItem, toList()));
 
         for (Item item : items) {
-            var currentsByItem = currents.get(item);
+            var currentsByItem = currents.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
             BookingInfoDto currentDto = null;
-            if (currentsByItem != null) {
-                var current = currentsByItem.stream().findFirst().orElse(null);
-                if (current != null) {
-                    currentDto = bookingMapper.toInfo(current);
-                }
+            if (currentsByItem.isPresent()) {
+                var current = currentsByItem.stream().findFirst().orElse(null).getValue().get(0);
+                currentDto = bookingMapper.toInfo(current);
             }
 
-            var nextsByItem = nexts.get(item);
+            var nextsByItem = nexts.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
             BookingInfoDto nextDto = null;
-            if (nextsByItem != null) {
-                var next = nextsByItem.stream().findFirst().orElse(null);
-                if (next != null) {
-                    nextDto = bookingMapper.toInfo(next);
-                }
+            if (nextsByItem.isPresent()) {
+                var next = nextsByItem.stream().findFirst().orElse(null).getValue().get(0);
+                nextDto = bookingMapper.toInfo(next);
             }
 
-            var lastsByItem = lasts.get(item);
+            var lastsByItem = lasts.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
             BookingInfoDto lastDto = null;
-            if (lastsByItem != null) {
-                var last = lastsByItem.stream().findFirst().orElse(null);
-                if (last != null) {
-                    lastDto = bookingMapper.toInfo(last);
-                }
+            if (lastsByItem.isPresent()) {
+                var last = lastsByItem.stream().findFirst().orElse(null).getValue().get(0);
+                lastDto = bookingMapper.toInfo(last);
             }
 
             var dto = itemMapper.toDtoWithBookings(currentDto, nextDto, lastDto, item);

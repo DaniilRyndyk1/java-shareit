@@ -24,7 +24,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query(value = "select b from Booking b where b.item.id = :itemId and b.booker.id = :userId order by b.end")
     List<Booking> findAllByItemAndUser(Long itemId, Long userId);
 
-    @Query(value = "select b from Booking b where b.booker.id = :userId order by b.end")
+    @Query(value = "select b from Booking b where b.item.owner.id = :userId AND NOW() BETWEEN b.start AND b.end order by b.end")
     List<Booking> findCurrentsByUser(Long userId);
 
     @Query(value = "SELECT b FROM Booking b WHERE b.id IN (SELECT b2.id FROM Booking b2 WHERE b2.item.owner.id = :userId AND EXTRACT(epoch FROM b2.start - NOW()) > 0 AND b2.status <> 'REJECTED' order by EXTRACT(epoch FROM b2.start - NOW()))")

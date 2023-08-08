@@ -55,7 +55,10 @@ public class BookingService {
             throw new ValidationException("Статус уже был изменен");
         }
 
-        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
+        booking.setStatus(BookingStatus.REJECTED);
+        if (approved) {
+            booking.setStatus(BookingStatus.APPROVED);
+        }
 
         return mapper.toDto(repository.save(booking));
     }
@@ -143,8 +146,6 @@ public class BookingService {
             throw new ValidationException("Конец бронирования не может быть раньше начала");
         } else if (booking.getEnd().isEqual(booking.getStart())) {
             throw new ValidationException("Конец бронирования не может быть равен началу");
-        } else if (booking.getStatus() == null) {
-            booking.setStatus(BookingStatus.WAITING);
         }
 
         var start = booking.getStart();

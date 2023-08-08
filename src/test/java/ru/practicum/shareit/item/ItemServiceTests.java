@@ -138,6 +138,22 @@ public class ItemServiceTests {
     }
 
     @Test
+    void shouldNotCreateCommentWithRejectedBooking() {
+        var user = userService.create(new UserDto(-1L, "amogus", "amogus@gmail.com"));
+        var item = itemService.create(new ItemDto(-1L, "amogus", "amogus", true, null), user.getId());
+
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(11),
+                LocalDateTime.now().plusHours(12),
+                item.getId());
+        var user2 = userService.create(new UserDto(-1L, "amogus1", "amogus1@gmail.com"));
+        var booking = bookingService.create(bookingInputDto, user2.getId());
+        bookingService.approve(booking.getId(), user.getId(), false);
+        assertThrows(ValidationException.class,
+                () -> itemService.createComment(commentInputDto, item.getId(), user2.getId()));
+    }
+
+    @Test
     void shouldNotCreateNullComment() {
         var itemId = itemService.create(item2Dto, 1L).getId();
         assertThrows(ValidationException.class,
@@ -174,6 +190,19 @@ public class ItemServiceTests {
         var booking = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
         var itemInfo = itemService.getWithBookings(item.getId(), user.getId());
         assertEquals(itemInfo.getNextBooking().getId(), booking.getId());
+    }
+
+    @Test
+    void shouldGetItemInfoWithCurrentBooking() throws InterruptedException {
+        var user = userService.create(new UserDto(-1L, "yyy", "yyy@gmail.com"));
+        var item = itemService.create(new ItemDto(-1L, "yyy2", "yyy2", true, null), user.getId());
+        var user2 = userService.create(new UserDto(-1L, "yyy3", "yyy3@gmail.com"));
+        var start = LocalDateTime.now().plusSeconds(1);
+        var end = LocalDateTime.now().plusSeconds(20);
+        var booking = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
+        Thread.sleep(2000);
+        var itemInfo = itemService.getWithBookings(item.getId(), user.getId());
+        assertEquals(itemInfo.getCurrentBooking().getId(), booking.getId());
     }
 
     @Test
@@ -224,7 +253,39 @@ public class ItemServiceTests {
     }
 
     @Test
-    void shouldNotGetAllWithWrongParams() throws InterruptedException {
+    void shouldGetAllItemsWithBookings() throws InterruptedException {
+        var user = userService.create(new UserDto(-1L, "zzz", "zzz@gmail.com"));
+        var item = itemService.create(new ItemDto(-1L, "zzz1", "zzz1", true, null), user.getId());
+
+        var user2 = userService.create(new UserDto(-1L, "zzz2", "zzz2@gmail.com"));
+//        var start = LocalDateTime.now().plusSeconds(1);
+//        var end = LocalDateTime.now().plusSeconds(2);
+//        var booking = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
+//        Thread.sleep(4000);
+
+        var start = LocalDateTime.now().plusSeconds(1);
+        var end = LocalDateTime.now().plusSeconds(200);
+        var booking2 = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
+        Thread.sleep(2000);
+
+        start = LocalDateTime.now().plusDays(1);
+        end = LocalDateTime.now().plusDays(2);
+        var booking3 = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
+
+        var items = itemService.getAllWithBookings(0, 20, user.getId());
+        assertEquals(items.size(), 1);
+        assertNotNull(items.get(0).getCurrentBooking());
+        assertEquals(items.get(0).getCurrentBooking().getId(), booking2.getId());
+
+        assertNotNull(items.get(0).getNextBooking());
+        assertEquals(items.get(0).getNextBooking().getId(), booking3.getId());
+
+        assertNotNull(items.get(0).getLastBooking());
+        assertEquals(items.get(0).getLastBooking().getId(), booking2.getId());
+    }
+
+    @Test
+    void shouldNotGetAllWithWrongSize() throws InterruptedException {
         var user = userService.create(new UserDto(-1L, "a2ss", "a2ss@gmail.com"));
         var item = itemService.create(new ItemDto(-1L, "b2ss", "b2ss", true, null), user.getId());
         var user2 = userService.create(new UserDto(-1L, "aa3ss", "aa3ss@gmail.com"));
@@ -234,5 +295,18 @@ public class ItemServiceTests {
         Thread.sleep(2000);
         itemService.createComment(commentInputDto, item.getId(), user2.getId());
         assertThrows(ValidationException.class, () -> itemService.getAllWithBookings(0, -1, user.getId()));
+    }
+
+    @Test
+    void shouldNotGetAllWithWrongFrom() throws InterruptedException {
+        var user = userService.create(new UserDto(-1L, "a2ssffff", "a2ssffff@gmail.com"));
+        var item = itemService.create(new ItemDto(-1L, "b2ssffff", "b2ssffff", true, null), user.getId());
+        var user2 = userService.create(new UserDto(-1L, "aa3ssffff", "aa3ssffff@gmail.com"));
+        var start = LocalDateTime.now().plusSeconds(1);
+        var end = LocalDateTime.now().plusSeconds(2);
+        bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
+        Thread.sleep(2000);
+        itemService.createComment(commentInputDto, item.getId(), user2.getId());
+        assertThrows(ValidationException.class, () -> itemService.getAllWithBookings(-1, 20, user.getId()));
     }
 }
