@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class ErrorHandlerTests {
+public class ErrorHandlerTest {
     private final ErrorHandler handler;
 
     @Test

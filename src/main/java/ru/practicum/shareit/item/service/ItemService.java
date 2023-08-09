@@ -25,10 +25,7 @@ import ru.practicum.shareit.request.service.ItemRequestService;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -96,47 +93,30 @@ public class ItemService {
                 .stream()
                 .collect(groupingBy(Comment::getItem, toList()));
 
-        var currents = bookingRepository.findCurrentsByUser(userId)
+        var currentBookings = bookingRepository.findCurrentsByUser(userId)
                 .stream()
                 .collect(groupingBy(Booking::getItem, toList()));
 
-        var lasts = bookingRepository.findLastsByUser(userId)
+        var lastBookings = bookingRepository.findLastsByUser(userId)
                 .stream()
                 .collect(groupingBy(Booking::getItem, toList()));
 
-        var nexts = bookingRepository.findNextsByUser(userId)
+        var nextBookings = bookingRepository.findNextsByUser(userId)
                 .stream()
                 .collect(groupingBy(Booking::getItem, toList()));
 
         for (Item item : items) {
-            var currentsByItem = currents.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
-            BookingInfoDto currentDto = null;
-            if (currentsByItem.isPresent()) {
-                var current = currentsByItem.stream().findFirst().orElse(null).getValue().get(0);
-                currentDto = bookingMapper.toInfo(current);
-            }
+            BookingInfoDto currentBooking = getBookingByItemFromMap(currentBookings, item);
 
-            var nextsByItem = nexts.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
-            BookingInfoDto nextDto = null;
-            if (nextsByItem.isPresent()) {
-                var next = nextsByItem.stream().findFirst().orElse(null).getValue().get(0);
-                nextDto = bookingMapper.toInfo(next);
-            }
+            BookingInfoDto nextBooking = getBookingByItemFromMap(nextBookings, item);
 
-            var lastsByItem = lasts.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
-            BookingInfoDto lastDto = null;
-            if (lastsByItem.isPresent()) {
-                var last = lastsByItem.stream().findFirst().orElse(null).getValue().get(0);
-                lastDto = bookingMapper.toInfo(last);
-            }
+            BookingInfoDto lastBooking = getBookingByItemFromMap(lastBookings, item);
 
-            var dto = itemMapper.toDtoWithBookings(currentDto, nextDto, lastDto, item);
-            var commentsByItem = comments.entrySet().stream().filter(x -> Objects.equals(x.getKey().getId(), item.getId())).findFirst();
-            if (commentsByItem.isPresent()) {
-                dto.setComments((commentsByItem.get().getValue().stream().map(commentMapper::toDto).collect(Collectors.toList())));
-            }
+            var itemDto = itemMapper.toDtoWithBookings(currentBooking, nextBooking, lastBooking, item);
+            var itemComments = getCommentsFromMap(comments, item);
+            itemDto.setComments(itemComments);
 
-            result.add(dto);
+            result.add(itemDto);
         }
 
         return result;
@@ -219,5 +199,35 @@ public class ItemService {
         }
         text = text.toLowerCase();
         return itemRepository.findByText(text, PageRequest.of(from / size, size)).stream().map(itemMapper::toDto).collect(Collectors.toList());
+    }
+
+    private List<CommentDto> getCommentsFromMap(Map<Item, List<Comment>> comments, Item item) {
+        return comments
+                .entrySet()
+                .stream()
+                .filter(x -> Objects.equals(x.getKey().getId(), item.getId()))
+                .findFirst()
+                .map(x -> x
+                        .getValue()
+                        .stream()
+                        .map(commentMapper::toDto)
+                        .collect(Collectors.toList()))
+                .orElseGet(ArrayList::new);
+    }
+
+    private BookingInfoDto getBookingByItemFromMap(Map<Item, List<Booking>> bookings, Item item) {
+        var result = bookings
+                .entrySet()
+                .stream()
+                .filter(x -> Objects.equals(x.getKey().getId(), item.getId()))
+                .findFirst();
+
+        return result
+                .map(itemListEntry -> bookingMapper.toInfo(itemListEntry
+                        .getValue()
+                        .stream()
+                        .findFirst()
+                        .get()))
+                .orElse(null);
     }
 }

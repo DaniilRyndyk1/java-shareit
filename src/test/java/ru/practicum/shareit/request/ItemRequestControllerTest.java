@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ru.practicum.shareit.user.model.User;
 
 @WebMvcTest(ItemRequestController.class)
-public class ItemRequestControllerTests {
+public class ItemRequestControllerTest {
 
     @Autowired
     private ObjectMapper mapper;
@@ -39,8 +39,6 @@ public class ItemRequestControllerTests {
 
     @Autowired
     private MockMvc mvc;
-
-    private static final String userHeaderName = Config.userHeaderName;
 
     private final User user = new User(1L, "Alex", "alex@alex.ru");
 
@@ -58,7 +56,7 @@ public class ItemRequestControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userHeaderName, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(itemRequestDto.getId()), Long.class))
                 .andExpect(jsonPath("$.description", is(itemRequestDto.getDescription())))
@@ -75,7 +73,7 @@ public class ItemRequestControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userHeaderName, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(itemRequest.getId()), Long.class))
                 .andExpect(jsonPath("$.description", is(itemRequest.getDescription())))
@@ -92,7 +90,7 @@ public class ItemRequestControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userHeaderName, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.[0].id", is(itemRequestDto.getId()), Long.class))
                 .andExpect(jsonPath("$.[0].description", is(itemRequestDto.getDescription())))
@@ -109,7 +107,7 @@ public class ItemRequestControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userHeaderName, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.[0].id", is(itemRequestDto.getId()), Long.class))
                 .andExpect(jsonPath("$.[0].description", is(itemRequestDto.getDescription())))

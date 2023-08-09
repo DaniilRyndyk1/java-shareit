@@ -30,7 +30,7 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
 @WebMvcTest(BookingController.class)
-public class BookingControllerTests {
+public class BookingControllerTest {
     @Autowired
     private ObjectMapper mapper;
     @MockBean
@@ -49,7 +49,6 @@ public class BookingControllerTests {
             BookingStatus.WAITING,
             LocalDateTime.now().plusHours(1),
             LocalDateTime.now().plusHours(2));
-    private final String userIdHeader = Config.userHeaderName;
 
     @Test
     void create() throws Exception {
@@ -61,7 +60,7 @@ public class BookingControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userIdHeader, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(bookingDto.getId()), Long.class))
                 .andExpect(jsonPath("$.start",
@@ -81,7 +80,7 @@ public class BookingControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userIdHeader, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", is(bookingDto.getId()), Long.class))
@@ -105,7 +104,7 @@ public class BookingControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userIdHeader, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.[0].id", is(bookingDto.getId()), Long.class))
@@ -129,7 +128,7 @@ public class BookingControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userIdHeader, 1))
+                        .header(Config.userHeaderName, 1))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.[0].id", is(bookingDto.getId()), Long.class))
@@ -151,7 +150,7 @@ public class BookingControllerTests {
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header(userIdHeader, 1)
+                        .header(Config.userHeaderName, 1)
                         .queryParam("approved", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(bookingDto.getId()), Long.class))

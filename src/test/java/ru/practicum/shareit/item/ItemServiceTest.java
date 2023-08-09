@@ -1,10 +1,12 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -22,142 +24,126 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class ItemServiceTests {
+public class ItemServiceTest {
     private final ItemService itemService;
     private final UserService userService;
     private final BookingService bookingService;
     private final ItemRequestService itemRequestService;
-    private final UserDto user1Dto = new UserDto(1L,"Danila","konosuba@gmail.com");
-    private final UserDto user2Dto = new UserDto(3L,"Danila3","konosuba3@gmail.com");
-    private final ItemDto itemDto = new ItemDto(1L, "Sword", "Very very heavy", true, null);
-    private final ItemDto item2Dto = new ItemDto(2L, "Another Sword", "Not very heavy", true, null);
-    private final CommentInputDto commentInputDto = new CommentInputDto("Круткой комент (кто не согласен - его проблемы)");
+    private UserDto user = new UserDto(1L,"Danila","konosuba@gmail.com");
+    private UserDto user2 = new UserDto(3L,"Danila3","konosuba3@gmail.com");
+    private ItemDto item = new ItemDto(1L, "Sword", "Very very heavy", true, null);
+    private ItemDto item2 = new ItemDto(2L, "Another Sword", "Not very heavy", true, null);
+    private ItemDto item3 = new ItemDto(3L, "test", "test", true, null);
+    private final CommentInputDto commentInput = new CommentInputDto("Круткой комент (кто не согласен - его проблемы)");
+
+    @BeforeEach
+    void setup() {
+        user = userService.create(user);
+        user2 = userService.create(user2);
+        item = itemService.create(item, user.getId());
+        item2 = itemService.create(item2, user2.getId());
+    }
 
     @Test
     void shouldCreateItem() {
-        var item3Dto = new ItemDto(3L, "test", "test", true, null);
-        var originalSize = itemService.getAllWithBookings(0,10, 1L).size();
-        itemService.create(item3Dto, 1L);
-        var newSize = itemService.getAllWithBookings(0,10, 1L).size();
-
+        var originalSize = itemService.getAllWithBookings(0,10, user.getId()).size();
+        item3 = itemService.create(item3, user.getId());
+        var newSize = itemService.getAllWithBookings(0,10, user.getId()).size();
         assertEquals(newSize, originalSize + 1);
     }
 
     @Test
     void shouldNotCreateItemWithNotFoundedUser() {
-        var originalSize = itemService.getAllWithBookings(0,10, 1L).size();
+        var originalSize = itemService.getAllWithBookings(0,10, user.getId()).size();
         assertThrows(NotFoundException.class,
-                () -> itemService.create(item2Dto, 999L));
-        var newSize = itemService.getAllWithBookings(0,10, 1L).size();
+                () -> itemService.create(item3, 999L));
+        var newSize = itemService.getAllWithBookings(0,10, user.getId()).size();
         assertEquals(newSize, originalSize);
     }
 
     @Test
     void shouldNotCreateItemWithoutAvailable() {
-        var newDto = new ItemDto(0L, "item", "same item", null, null);
-
-        var originalSize = itemService.getAllWithBookings(0,10, 1L).size();
+        var item4 = new ItemDto(-1L, "item", "same item", null, null);
         assertThrows(DataIntegrityViolationException.class,
-                () -> itemService.create(newDto, 1L));
-        var newSize = itemService.getAllWithBookings(0,10, 1L).size();
-        assertEquals(newSize, originalSize);
+                () -> itemService.create(item4, user.getId()));
     }
 
     @Test
     void shouldNotCreateItemWithoutName() {
-        var newDto = new ItemDto(0L, null, "same item", true, null);
-
-        var originalSize = itemService.getAllWithBookings(0,10, 1L).size();
+        var item4 = new ItemDto(0L, null, "same item", true, null);
         assertThrows(DataIntegrityViolationException.class,
-                () -> itemService.create(newDto, 1L));
-        var newSize = itemService.getAllWithBookings(0,10, 1L).size();
-        assertEquals(newSize, originalSize);
+                () -> itemService.create(item4, user.getId()));
     }
 
     @Test
     void shouldNotCreateItemWithoutDescription() {
-        var newDto = new ItemDto(0L, "item", null, true, null);
-
-        var originalSize = itemService.getAllWithBookings(0,10, 1L).size();
+        var item5 = new ItemDto(-1L, "item", null, true, null);
         assertThrows(DataIntegrityViolationException.class,
-                () -> itemService.create(newDto, 1L));
-        var newSize = itemService.getAllWithBookings(0,10, 1L).size();
-        assertEquals(newSize, originalSize);
+                () -> itemService.create(item5, user2.getId()));
     }
 
     @Test
     void shouldUpdateItem() {
-        var original = itemService.get(1L);
-        var newItem = new ItemDto(original.getId(), original.getName() + "Hello!!", original.getDescription(), true, null);
-        var itemAfterPatch = itemService.patch(newItem, original.getId(), original.getOwner().getId());
-        assertNotEquals(itemAfterPatch.getName(), original.getName());
-        assertEquals(itemAfterPatch.getDescription(), original.getDescription());
-        assertEquals(itemAfterPatch.getAvailable(), original.getAvailable());
-        assertNull(itemAfterPatch.getRequestId());
+        var item3 = new ItemDto(item.getId(), item.getName() + "Hello!!", item.getDescription(), true, null);
+        item3 = itemService.patch(item3, item.getId(), user.getId());
+        assertNotEquals(item3.getName(), item.getName());
+        assertEquals(item3.getDescription(), item.getDescription());
+        assertEquals(item3.getAvailable(), item.getAvailable());
+        assertNull(item3.getRequestId());
     }
 
     @Test
     void shouldSearchItemByName() {
-        assertEquals(itemService.search("Hello!!", 0, 1).size(), 1);
+        assertEquals(itemService.search("another", 0, 1).size(), 1);
     }
 
     @Test
     void shouldSearchItemByDescription() {
-        assertEquals(itemService.search("heavy", 0, 1).size(), 1);
+        assertEquals(itemService.search("Not", 0, 1).size(), 1);
     }
 
     @Test
     void shouldCreateComment() throws InterruptedException {
-        var itemId = itemService.create(item2Dto, 1L).getId();
         var bookingInputDto = new BookingInputDto(
                 LocalDateTime.now().plusSeconds(1),
                 LocalDateTime.now().plusSeconds(2),
-                itemId);
-        bookingService.create(bookingInputDto, 2L);
+                item2.getId());
+        bookingService.create(bookingInputDto, user.getId());
         Thread.sleep(2000);
-        itemService.createComment(commentInputDto, itemId, 2L);
-        var itemNewDto = itemService.getWithBookings(itemId, 2L);
+        itemService.createComment(commentInput, item2.getId(), user.getId());
+        var itemNewDto = itemService.getWithBookings(item2.getId(), user.getId());
         assertEquals(1, itemNewDto.getComments().size());
     }
 
     @Test
     void shouldNotCreateCommentWithNotEndedBooking() {
-        userService.create(user1Dto);
-        itemService.create(itemDto, 1L);
-
-        var itemId = itemService.create(item2Dto, 1L).getId();
-        var bookingInputDto = new BookingInputDto(
-                LocalDateTime.now().plusHours(11),
-                LocalDateTime.now().plusHours(12),
-                itemId);
-        var user2 = userService.create(user2Dto);
-        bookingService.create(bookingInputDto, user2.getId());
-        assertThrows(ValidationException.class,
-                () -> itemService.createComment(commentInputDto, itemId, user2.getId()));
-    }
-
-    @Test
-    void shouldNotCreateCommentWithRejectedBooking() {
-        var user = userService.create(new UserDto(-1L, "amogus", "amogus@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "amogus", "amogus", true, null), user.getId());
-
         var bookingInputDto = new BookingInputDto(
                 LocalDateTime.now().plusHours(11),
                 LocalDateTime.now().plusHours(12),
                 item.getId());
-        var user2 = userService.create(new UserDto(-1L, "amogus1", "amogus1@gmail.com"));
+        bookingService.create(bookingInputDto, user2.getId());
+        assertThrows(ValidationException.class,
+                () -> itemService.createComment(commentInput, item.getId(), user2.getId()));
+    }
+
+    @Test
+    void shouldNotCreateCommentWithRejectedBooking() {
+        var bookingInputDto = new BookingInputDto(
+                LocalDateTime.now().plusHours(11),
+                LocalDateTime.now().plusHours(12),
+                item.getId());
         var booking = bookingService.create(bookingInputDto, user2.getId());
         bookingService.approve(booking.getId(), user.getId(), false);
         assertThrows(ValidationException.class,
-                () -> itemService.createComment(commentInputDto, item.getId(), user2.getId()));
+                () -> itemService.createComment(commentInput, item.getId(), user2.getId()));
     }
 
     @Test
     void shouldNotCreateNullComment() {
-        var itemId = itemService.create(item2Dto, 1L).getId();
-        assertThrows(ValidationException.class,
-                () -> itemService.createComment(new CommentInputDto(null), itemId, 2L));
+        assertThrows(NotFoundException.class,
+                () -> itemService.createComment(new CommentInputDto(null), item2.getId(), 2L));
     }
 
     @Test
@@ -167,24 +153,20 @@ public class ItemServiceTests {
 
     @Test
     void shouldNotSearchWithWrongParams() {
-        assertThrows(ValidationException.class, () -> itemService.search("Hello!!", -1, 20));
+        assertThrows(ValidationException.class,
+                () -> itemService.search("Hello!!", -1, 20));
     }
 
     @Test
     void shouldNotPatchByNoOwnerAndNoBooker() {
-        var user = userService.create(new UserDto(-1L, "a", "a@gmail.com"));
+        var user3 = userService.create(new UserDto(-1L, "a", "a@gmail.com"));
         var dto = new ItemDto(-1L, "b", "b", true, null);
-        var item = itemService.create(dto, user.getId());
-        dto.setAvailable(false);
-        var user2 = userService.create(new UserDto(-1L, "aa", "aa@gmail.com"));
-        assertThrows(NotFoundException.class, () -> itemService.patch(dto, item.getId(), user2.getId()));
+        var item3 = itemService.create(dto, user.getId());
+        assertThrows(NotFoundException.class, () -> itemService.patch(dto, item3.getId(), user3.getId()));
     }
 
     @Test
     void shouldGetItemInfoWithBooking() {
-        var user = userService.create(new UserDto(-1L, "a2", "a2@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "b2", "b2", true, null), user.getId());
-        var user2 = userService.create(new UserDto(-1L, "aa3", "aa3@gmail.com"));
         var start = LocalDateTime.now().plusHours(1);
         var end = LocalDateTime.now().plusHours(2);
         var booking = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
@@ -194,9 +176,6 @@ public class ItemServiceTests {
 
     @Test
     void shouldGetItemInfoWithCurrentBooking() throws InterruptedException {
-        var user = userService.create(new UserDto(-1L, "yyy", "yyy@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "yyy2", "yyy2", true, null), user.getId());
-        var user2 = userService.create(new UserDto(-1L, "yyy3", "yyy3@gmail.com"));
         var start = LocalDateTime.now().plusSeconds(1);
         var end = LocalDateTime.now().plusSeconds(20);
         var booking = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
@@ -207,29 +186,24 @@ public class ItemServiceTests {
 
     @Test
     void shouldNotCreateCommentToItemWithoutBookings() {
-        var user = userService.create(new UserDto(-1L, "a21", "a21@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "b21", "b21", true, null), user.getId());
-        var user2 = userService.create(new UserDto(-1L, "aa31", "aa31@gmail.com"));
-        assertThrows(ValidationException.class, () -> itemService.createComment(commentInputDto, item.getId(), user2.getId()));
+        assertThrows(ValidationException.class,
+                () -> itemService.createComment(commentInput, item.getId(), user2.getId()));
     }
 
     @Test
     void shouldCreateItemByRequest() {
-        var user = userService.create(new UserDto(-1L, "a22_", "a22_@gmail.com"));
         var itemRequest = itemRequestService.create(new ItemRequestInputDto("Хочу чего-то вкусного.."), user.getId());
-        var user2 = userService.create(new UserDto(-1L, "aa32_", "aa32_@gmail.com"));
         var originalSize = itemService.getAllWithBookings(0, 50, user2.getId()).size();
-        var item = itemService.create(new ItemDto(-1L, "b22_", "b22_", true, itemRequest.getId()), user.getId());
+        var item3 = new ItemDto(-1L, "b22_", "b22_", true, itemRequest.getId());
+        item3 = itemService.create(item3, user.getId());
         var items = itemService.getAllWithBookings(0, 50, user.getId());
         var newSize = items.size();
         assertEquals(newSize, originalSize + 1);
-        assertEquals(item.getId(), items.get(0).getId());
+        assertEquals(item3.getId(), items.get(1).getId());
     }
 
     @Test
     void shouldRemoveItem() {
-        var user = userService.create(new UserDto(-1L, "a22", "a22@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "b22", "b22", true, null), user.getId());
         var originalSize = itemService.getAllWithBookings(0, 20, user.getId()).size();
         itemService.remove(item.getId());
         var newSize = itemService.getAllWithBookings(0, 20, user.getId()).size();
@@ -238,14 +212,11 @@ public class ItemServiceTests {
 
     @Test
     void shouldGetAllItemsWithComments() throws InterruptedException {
-        var user = userService.create(new UserDto(-1L, "a2s", "a2s@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "b2s", "b2s", true, null), user.getId());
-        var user2 = userService.create(new UserDto(-1L, "aa3s", "aa3s@gmail.com"));
         var start = LocalDateTime.now().plusSeconds(1);
         var end = LocalDateTime.now().plusSeconds(2);
         bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
         Thread.sleep(2000);
-        var comment = itemService.createComment(commentInputDto, item.getId(), user2.getId());
+        var comment = itemService.createComment(commentInput, item.getId(), user2.getId());
         var items = itemService.getAllWithBookings(0, 20, user.getId());
         assertEquals(items.size(), 1);
         assertEquals(items.get(0).getComments().size(), 1);
@@ -254,15 +225,6 @@ public class ItemServiceTests {
 
     @Test
     void shouldGetAllItemsWithBookings() throws InterruptedException {
-        var user = userService.create(new UserDto(-1L, "zzz", "zzz@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "zzz1", "zzz1", true, null), user.getId());
-
-        var user2 = userService.create(new UserDto(-1L, "zzz2", "zzz2@gmail.com"));
-//        var start = LocalDateTime.now().plusSeconds(1);
-//        var end = LocalDateTime.now().plusSeconds(2);
-//        var booking = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
-//        Thread.sleep(4000);
-
         var start = LocalDateTime.now().plusSeconds(1);
         var end = LocalDateTime.now().plusSeconds(200);
         var booking2 = bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
@@ -286,27 +248,21 @@ public class ItemServiceTests {
 
     @Test
     void shouldNotGetAllWithWrongSize() throws InterruptedException {
-        var user = userService.create(new UserDto(-1L, "a2ss", "a2ss@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "b2ss", "b2ss", true, null), user.getId());
-        var user2 = userService.create(new UserDto(-1L, "aa3ss", "aa3ss@gmail.com"));
         var start = LocalDateTime.now().plusSeconds(1);
         var end = LocalDateTime.now().plusSeconds(2);
         bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
         Thread.sleep(2000);
-        itemService.createComment(commentInputDto, item.getId(), user2.getId());
+        itemService.createComment(commentInput, item.getId(), user2.getId());
         assertThrows(ValidationException.class, () -> itemService.getAllWithBookings(0, -1, user.getId()));
     }
 
     @Test
     void shouldNotGetAllWithWrongFrom() throws InterruptedException {
-        var user = userService.create(new UserDto(-1L, "a2ssffff", "a2ssffff@gmail.com"));
-        var item = itemService.create(new ItemDto(-1L, "b2ssffff", "b2ssffff", true, null), user.getId());
-        var user2 = userService.create(new UserDto(-1L, "aa3ssffff", "aa3ssffff@gmail.com"));
         var start = LocalDateTime.now().plusSeconds(1);
         var end = LocalDateTime.now().plusSeconds(2);
         bookingService.create(new BookingInputDto(start, end, item.getId()), user2.getId());
         Thread.sleep(2000);
-        itemService.createComment(commentInputDto, item.getId(), user2.getId());
+        itemService.createComment(commentInput, item.getId(), user2.getId());
         assertThrows(ValidationException.class, () -> itemService.getAllWithBookings(-1, 20, user.getId()));
     }
 }
