@@ -59,12 +59,12 @@ public class ItemService {
                 current = bookingMapper.toInfo(currentData);
             }
 
-            var bookings = bookingRepository.findNextByItem(item.getId());
+            var bookings = bookingRepository.findNextBookingsByItem(item.getId());
             if (bookings.size() != 0) {
                 next = bookingMapper.toInfo(bookings.get(0));
             }
 
-            bookings = bookingRepository.findLastByItem(item.getId());
+            bookings = bookingRepository.findLastBookingsByItem(item.getId());
             if (bookings.size() != 0) {
                 last = bookingMapper.toInfo(bookings.get(0));
             }
@@ -93,15 +93,15 @@ public class ItemService {
                 .stream()
                 .collect(groupingBy(Comment::getItem, toList()));
 
-        var currentBookings = bookingRepository.findCurrentsByUser(userId)
+        var currentBookings = bookingRepository.findCurrentBookingsByUser(userId)
                 .stream()
                 .collect(groupingBy(Booking::getItem, toList()));
 
-        var lastBookings = bookingRepository.findLastsByUser(userId)
+        var lastBookings = bookingRepository.findLastBookingsByUser(userId)
                 .stream()
                 .collect(groupingBy(Booking::getItem, toList()));
 
-        var nextBookings = bookingRepository.findNextsByUser(userId)
+        var nextBookings = bookingRepository.findNextBookingsByUser(userId)
                 .stream()
                 .collect(groupingBy(Booking::getItem, toList()));
 
