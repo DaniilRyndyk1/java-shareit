@@ -13,7 +13,6 @@ import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.service.ItemService;
 
 import javax.validation.Valid;
-import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -28,8 +27,8 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDtoWithBooking> getAll(@RequestHeader(Config.userHeaderName) Long userId) {
-        return service.getAllWithBookings(userId);
+    public List<ItemDtoWithBooking> getAll(@RequestParam(defaultValue = "0") Integer from, @RequestParam(defaultValue = "10") Integer size, @RequestHeader(Config.userHeaderName) Long userId) {
+        return service.getAllWithBookings(from, size, userId);
     }
 
     @DeleteMapping("{id}")
@@ -48,11 +47,8 @@ public class ItemController {
     }
 
     @GetMapping("search")
-    public List<ItemDto> search(String text) {
-        if (text.isBlank()) {
-            return Collections.emptyList();
-        }
-        return service.search(text);
+    public List<ItemDto> search(String text, @RequestParam(defaultValue = "0") Integer from, @RequestParam(defaultValue = "10") Integer size) {
+        return service.search(text, from, size);
     }
 
     @PostMapping("{itemId}/comment")
